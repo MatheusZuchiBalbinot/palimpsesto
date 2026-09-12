@@ -130,84 +130,35 @@ mesma disciplina push-on-mount/pop-on-unmount que `Modal`/`Dropdown` seguem de v
 
 ---
 
-## 6. `[PENDENTE]` Zero cobertura de teste pra `identityStore.ts` e `floatingLayers.ts`
+## 7. `[FEITO]` Contato de segurança no `SECURITY.md`
 
-**Achado**: os dois arquivos mais recentemente reescritos por motivo de segurança/bug real
-não têm nenhum teste automatizado no repositório — a validação que existiu foi manual
-(scripts descartáveis, já apagados).
+**Achado**: `SECURITY.md` tinha `[TODO: endereço de contato de segurança]` — publicar um
+endereço pessoal num repositório público era uma escolha sua, não técnica.
 
-### 6a. `identityStore.ts`
-
-**O que fazer**: adicionar `fake-indexeddb` como dev dependency real (não instalação
-temporária) e escrever `web/src/test/crypto/identityStore.test.ts` cobrindo, no mínimo:
-
-- `loadIdentityKeyPair` retorna `null` antes de qualquer `save`.
-- Round-trip: `save` seguido de `load` devolve exatamente o que foi salvo.
-- Dois `userId` diferentes no mesmo "device" (mesmo teste, mesma execução) não colidem —
-  cada um recupera só o seu.
-- Ciphertext adulterado (flipar um byte) faz `loadIdentityKeyPair` retornar `null` (não
-  lançar, não devolver lixo) — é esse o contrato que o `try/catch` do módulo promete.
-
-Isso reproduz exatamente o smoketest manual que já rodou uma vez nesta sessão — só que
-permanente, rodando em todo `npm run test` daqui pra frente.
-
-**Configuração adicional necessária**: `test/setup.ts` (ou um setup específico desse
-arquivo de teste) precisa garantir que `indexedDB` está disponível no ambiente jsdom —
-`import 'fake-indexeddb/auto'` no topo do arquivo de teste resolve sem precisar mexer no
-setup global, já que nenhum outro teste do projeto precisa de IndexedDB.
-
-### 6b. `floatingLayers.ts`
-
-**O que fazer**: `web/src/test/lib/floatingLayers.test.ts` — é lógica pura (um array e
-funções sobre ele), não precisa de DOM nem de mock de componente:
-
-- `pushLayer`/`isTopLayer`: a última camada empilhada é a do topo.
-- `popLayer` remove só a instância certa (não a primeira ocorrência de um id repetido, se
-  isso puder acontecer) e a camada anterior volta a ser o topo.
-- `hasAnyLayer` reflete corretamente pilha vazia vs não-vazia.
-
-Mais valioso ainda seria um teste de integração leve pro cenário que motivou a correção —
-mas isso exige montar `Modal`+`Dropdown` juntos com Testing Library e simular o
-`Escape`, o que é bem mais trabalho por um ganho menor do que testar o registro em si
-isoladamente. Fica como "bom ter", não como bloqueio.
-
-**Como saber que terminou**: `npm run test` cobrindo os dois arquivos, rodando no CI
-(`frontend.yml` já roda `npm run test` — nenhuma mudança de workflow necessária, só os
-arquivos de teste precisam existir).
+**O que foi feito**: em vez de um email, `SECURITY.md` agora aponta pro
+[GitHub Security Advisories](https://github.com/MatheusZuchiBalbinot/palimpsesto/security/advisories/new)
+do próprio repositório (aba "Security" → "Report a vulnerability") — relato privado,
+direto pro mantenedor, sem expor nenhum email. A frase sobre prazo de resposta em "até 5
+dias úteis" (que fazia sentido só pra um canal de email) também saiu.
 
 ---
 
-## 7. `[PENDENTE — decisão sua]` Contato de segurança no `SECURITY.md`
+## 8. `[FEITO]` Licença e caminho do repositório
 
-**Achado**: `SECURITY.md` tem `[TODO: endereço de contato de segurança]` — não decidi um
-email por você, porque publicar um endereço pessoal num repositório público é uma escolha
-sua, não técnica.
-
-**O que fazer**: decidir se é seu email pessoal, um email dedicado
-(`security@seudominio`), ou um formulário/GitHub Security Advisory (a plataforma tem um
-mecanismo nativo pra isso, `Settings → Security → Reporting`, que evita expor qualquer
-email publicamente). Depois, uma linha trocada em `SECURITY.md`.
-
----
-
-## 8. `[PENDENTE — decisão sua]` Licença e caminho do repositório
-
-**Achado**: sem `LICENSE`; badges do README apontam pra `SEU_USUARIO/palimpsesto`
+**Achado**: sem `LICENSE`; badges do README apontavam pra `SEU_USUARIO/palimpsesto`
 (placeholder).
 
-**O que fazer**: escolher a licença (MIT, Apache 2.0, ou nenhuma/todos os direitos
-reservados) e me passar o `usuário/repo` real do GitHub assim que existir, pra eu trocar
-os dois placeholders (`README.md` e o link de `LICENSE` no badge).
+**O que foi feito**: licença escolhida — MIT (`LICENSE`, copyright Matheus Zuchi
+Balbinot, 2026). Repositório criado e publicado como público em
+[`MatheusZuchiBalbinot/palimpsesto`](https://github.com/MatheusZuchiBalbinot/palimpsesto)
+via `gh repo create`; os dois placeholders (`README.md` e o link do badge de licença)
+trocados pelo caminho real. Branch padrão renomeado de `master` pra `main` (os workflows
+de CI esperavam `main`; isso destravou o Frontend/Backend CI, confirmado rodando e verde).
 
 ---
 
 ## Estado atual
 
-Itens 1-6 estão todos `[FEITO]` — ficam documentados aqui pra o plano ser auditável (dá
-pra conferir cada um contra o código de verdade, não é uma alegação solta). Só restam:
-
-- **Item 7** — contato de segurança em `SECURITY.md`.
-- **Item 8** — licença e caminho do repositório no GitHub.
-
-Nenhum dos dois é trabalho de engenharia — são decisões que só você toma. Assim que
-responder, aplico.
+Todos os itens (1-8) estão `[FEITO]` — ficam documentados aqui pra o plano ser auditável
+(dá pra conferir cada um contra o código de verdade, não é uma alegação solta). Nada
+pendente neste plano.
