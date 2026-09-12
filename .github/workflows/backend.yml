@@ -10,6 +10,7 @@ on:
     paths:
       - "server/**"
       - ".github/workflows/backend.yml"
+  workflow_dispatch:
 
 jobs:
   test:
