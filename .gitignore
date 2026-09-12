@@ -1,0 +1,27 @@
+# Go
+/server/bin/
+/server/tmp/
+*.test
+
+# Node
+node_modules/
+/web/dist/
+
+# Screenshots from scripts/visualCheck.ts — throwaway verification
+# artifacts (fake test accounts, timestamps in filenames), not meant to
+# accumulate in git history.
+/web/scripts/screenshots/
+/web/scripts/screenshots-real-user/
+
+# Ambiente
+.env
+.env.local
+.env.production
+*.local
+
+# Editores
+.vscode/
+.idea/
+
+# Ferramentas locais de IA
+.claude/
