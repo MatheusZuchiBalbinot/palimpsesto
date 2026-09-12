@@ -1,0 +1,62 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "server/**"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "server/**"
+      - ".github/workflows/backend.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: palimpsesto
+          POSTGRES_PASSWORD: palimpsesto
+          POSTGRES_DB: palimpsesto
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U palimpsesto -d palimpsesto"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PALIMPSESTO_DATABASE_URL: postgres://palimpsesto:palimpsesto@localhost:5432/palimpsesto?sslmode=disable
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+
+      - name: Check formatting (gofmt)
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "The following files are not gofmt-formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Apply migrations
+        run: go run github.com/pressly/goose/v3/cmd/goose@v3.28.0 -dir migrations postgres "$PALIMPSESTO_DATABASE_URL" up
+
+      - name: Test
+        run: go test ./... -race
