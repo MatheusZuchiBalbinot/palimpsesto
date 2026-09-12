@@ -1,0 +1,92 @@
+# Production overrides — merge on top of the base compose file, never
+# used standalone:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# What this changes from the dev-shaped base file:
+#   - Every service builds its `prod` Docker target instead of `dev` — a
+#     minimal final image (static Go binary; nginx serving Vite's built
+#     assets — see server/Dockerfile and web/Dockerfile) instead of a
+#     dev-tooling image with source bind-mounted in for hot reload.
+#   - No bind mounts. The prod images already contain everything they
+#     need; mounting live source over them would just shadow the built
+#     artifacts with whatever happens to be on the host's disk.
+#   - Postgres's port is no longer published to the host — nothing
+#     outside this compose network needs to reach it directly. The
+#     server still reaches it at db:5432, same as in dev.
+#   - PALIMPSESTO_SECURE_COOKIES is no longer forced to "false" — the
+#     base file's dev-only override doesn't apply here (compose merges
+#     `environment` key by key, so this file's own value replaces it),
+#     and server/internal/config/config.go already defaults it to true.
+#     A real deploy needs this true: it's what makes the refresh cookie
+#     Secure, sent only over HTTPS.
+#   - PALIMPSESTO_JWT_SECRET and POSTGRES_PASSWORD have no insecure
+#     fallback here (the base file's own `${VAR:-palimpsesto}` /
+#     `${VAR:-dev-only-secret-change-me-please-32b}` defaults are a dev-only
+#     convenience) — `${VAR:?msg}` fails the `docker compose` invocation
+#     itself if either is unset, before a container ever starts.
+#     config.go's own Load() independently refuses to boot without a JWT
+#     secret too (and rejects anything under 32 bytes) — that's a second,
+#     earlier line of defense against the same mistake, not a replacement
+#     for this one. POSTGRES_PASSWORD has no equivalent app-level check
+#     (Postgres itself is what enforces it), so this compose-level guard
+#     is the only one it gets.
+#
+# What this deliberately does NOT do: terminate TLS. web's nginx
+# (web/nginx.conf.template) only ever speaks plain HTTP — see that
+# file's own comment on Strict-Transport-Security for why. A real
+# deployment needs a reverse proxy / load balancer in front of the `web`
+# service's published port 80 doing TLS termination (a managed load
+# balancer, Caddy, Cloudflare Tunnel, …); which one depends on where
+# this actually gets hosted, so it's out of scope for this compose file.
+services:
+  db:
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your production .env}"
+    # `ports: []` alone would NOT do this — compose's default merge
+    # behavior for `ports`/`volumes` is to union the base and override
+    # lists, not replace one with the other (unlike `environment`, which
+    # merges key-by-key, or `command`, which replaces outright). `!reset`
+    # is compose's explicit "clear whatever the base set here" tag.
+    ports: !reset []
+
+  server:
+    build:
+      target: prod
+    volumes: !reset []
+    environment:
+      PALIMPSESTO_DATABASE_URL: "postgres://${POSTGRES_USER:-palimpsesto}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your production .env}@db:5432/${POSTGRES_DB:-palimpsesto}?sslmode=disable"
+      PALIMPSESTO_JWT_SECRET: "${PALIMPSESTO_JWT_SECRET:?Set PALIMPSESTO_JWT_SECRET in your production .env, e.g. via: openssl rand -base64 32}"
+      PALIMPSESTO_SECURE_COOKIES: "true"
+    ports: !reset []
+
+  web:
+    build:
+      target: prod
+    volumes: !reset []
+    environment:
+      API_PROXY_TARGET: http://server:8080
+    # `!override` (not a plain list) because 5173 (the base file's Vite
+    # dev server port) needs to actually go away, not just gain 80
+    # alongside it — same union-by-default reasoning as db/server's
+    # `!reset` above.
+    ports: !override
+      - "80:80"
+
+  # Not part of the normal `up` — the `tools` profile means this only
+  # ever starts via an explicit `docker compose run` (see the Makefile's
+  # migrate-up-prod/migrate-down-prod), same as goose's dev-side
+  # counterpart (Makefile's migrate-up) isn't a long-running service
+  # either. Builds server/Dockerfile's `migrate` stage: Go toolchain +
+  # migrations/, no application binary — the `prod` stage deliberately
+  # doesn't have a Go toolchain to run goose with at all.
+  migrate:
+    profiles: ["tools"]
+    build:
+      context: ./server
+      target: migrate
+    environment:
+      PALIMPSESTO_DATABASE_URL: "postgres://${POSTGRES_USER:-palimpsesto}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your production .env}@db:5432/${POSTGRES_DB:-palimpsesto}?sslmode=disable"
+    depends_on:
+      db:
+        condition: service_healthy
