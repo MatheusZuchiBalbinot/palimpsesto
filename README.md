@@ -2,10 +2,14 @@
 
 [![Backend CI](https://github.com/MatheusZuchiBalbinot/palimpsesto/actions/workflows/backend.yml/badge.svg)](https://github.com/MatheusZuchiBalbinot/palimpsesto/actions/workflows/backend.yml)
 [![Frontend CI](https://github.com/MatheusZuchiBalbinot/palimpsesto/actions/workflows/frontend.yml/badge.svg)](https://github.com/MatheusZuchiBalbinot/palimpsesto/actions/workflows/frontend.yml)
-<!-- TODO: troque o badge de license assim que a licença for escolhida (ver ACTION_PLAN.md item 8) — sem LICENSE no repo, esse "TBD" é o estado real, não só um placeholder de preguiça. -->
-[![License](https://img.shields.io/badge/license-TBD-lightgrey)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-<!-- TODO: um screenshot ou GIF curto do editor/vault aqui ajuda muito mais que texto — não dá pra gerar isso sem abrir o app num navegador real. -->
+<p align="center">
+  <img src="docs/screenshots/editor.png" alt="Editor do Palimpsesto, mostrando um documento aberto com o painel de comentários" width="80%">
+</p>
+<p align="center">
+  <img src="docs/screenshots/share.png" alt="Modal de compartilhamento do Palimpsesto, com convite por e-mail e link" width="80%">
+</p>
 
 Lista bruta de pontos sobre o software — pra revisar e organizar depois.
 
