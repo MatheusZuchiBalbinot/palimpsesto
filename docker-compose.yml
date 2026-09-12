@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-palimpsesto}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-palimpsesto}
+      POSTGRES_DB: ${POSTGRES_DB:-palimpsesto}
+    ports:
+      - "5432:5432"
+    volumes:
+      - palimpsesto_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-palimpsesto} -d ${POSTGRES_DB:-palimpsesto}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: ./server
+      target: dev
+    restart: unless-stopped
+    environment:
+      PALIMPSESTO_ADDR: ${PALIMPSESTO_ADDR:-:8080}
+      PALIMPSESTO_DATABASE_URL: postgres://${POSTGRES_USER:-palimpsesto}:${POSTGRES_PASSWORD:-palimpsesto}@db:5432/${POSTGRES_DB:-palimpsesto}?sslmode=disable
+      PALIMPSESTO_JWT_SECRET: ${PALIMPSESTO_JWT_SECRET:-dev-only-secret-change-me-please-32b}
+      # This compose file serves everything over plain HTTP (no TLS) — a
+      # Secure cookie would never be sent back by the browser in that
+      # scenario, breaking refresh entirely. Only disabled here, in the dev
+      # compose; any real deploy that doesn't set this variable stays
+      # secure by default.
+      PALIMPSESTO_SECURE_COOKIES: "false"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./server:/app
+      - server_gocache:/root/.cache/go-build
+      - server_gomodcache:/go/pkg/mod
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./web
+      target: dev
+    restart: unless-stopped
+    environment:
+      VITE_API_PROXY_TARGET: http://server:8080
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./web:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      - server
+
+volumes:
+  palimpsesto_pgdata:
+  server_gocache:
+  server_gomodcache:
+  web_node_modules:
