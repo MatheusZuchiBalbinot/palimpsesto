@@ -1,0 +1,397 @@
+/* Design tokens taken directly from the design-handoff v2 prototype
+   (Palimpsesto v2.dc.html) — a warmer cream/bronze palette replacing the
+   earlier moss-green one. One light theme in the prototype itself; the
+   dark variant below is derived from it, following the same "don't
+   invert a neutral into its opposite, recompute contrast at each step"
+   discipline the original dark theme used (see the comment on
+   --action-primary-bg in the dark block). */
+:root {
+	--bg: #efebe2;
+	/* --bg as an r,g,b triplet — for the handful of spots that need --bg
+   * inside an rgba(..., alpha) (a translucent header, a fade-to-transparent
+   * gradient) instead of as a flat color. Redefined alongside --bg in every
+   * theme block below, unlike --on-brand-dark-rgb further down, which is
+   * deliberately never redefined. */
+	--bg-rgb: 239, 235, 226;
+	--bg-sidebar: #eae5da;
+	--bg-card: #fcfaf6;
+	--bg-card-rgb: 252, 250, 246;
+	--bg-hover: rgba(255, 255, 255, 0.55);
+	/* One step stronger than --bg-hover — icon buttons sit directly on --bg,
+   * where a translucent-white hover barely shows. */
+	--bg-hover-strong: #e3ddd0;
+	/* Recessed surface for form controls, and the two stops the
+   * loading-skeleton shimmer sweeps between. Both were previously
+   * written as var(--bg-input, ...) / var(--bg-skeleton, ...) with a
+   * border token as the fallback — names that had never actually been
+   * defined. The fallback hid it until --border-hover was darkened for
+   * contrast, at which point the skeleton started sweeping near-black. */
+	--bg-input: #fcfaf6;
+	--bg-skeleton: #e6e1d3;
+	--bg-skeleton-shine: #f2eee3;
+
+	--border: #dedad1;
+	/* border-input/border-hover: bumped to >=3:1 against --bg-card (WCAG
+   * 1.4.11, non-text contrast) — a literal rgba(26,25,19,0.18)/0.3 (the
+   * prototype's own underline-input values) sat under that minimum once
+   * blended onto --bg-card. */
+	--border-input: #b3ac9c;
+	--border-hover: #948c78;
+	--divider: #e3ddd0;
+
+	--text: #1a1913;
+	--text-secondary: #3d3a32;
+	--text-tertiary: #7c786c;
+	/* text-muted/text-faint: kept at >=4.5:1 / >=3:1 against --bg (WCAG AA
+   * text / non-text) — the prototype's own lightest labels (#9a9587,
+   * #b5b0a1) read fine on its brighter card surfaces but drop under 3:1
+   * directly on --bg, so muted/faint here are darkened a step from the
+   * prototype's literal values wherever they carry real content. */
+	--text-muted: #6b6355;
+	--text-faint: #8a8275;
+	--text-faintest: #c7c2b5;
+
+	--accent: #8c6a3f;
+	--accent-rgb: 140, 106, 63;
+	--accent-bg: rgba(140, 106, 63, 0.12);
+	/* Decoupled from --accent on purpose — the prototype uses bronze for
+   * links/CTAs/selection but a distinct sage green specifically for
+   * "online"/"private"/success signals (the vault's presence widget, the
+   * editor's privacy badge). --accent-dot and --success below carry that
+   * green; nothing else should. */
+	--accent-dot: #5d7c71;
+	--accent-hover: #6e5230;
+
+	--success: #3f5c51;
+	--success-bg: rgba(93, 124, 113, 0.14);
+
+	--warn: #8c6a3f;
+	--warn-bg: rgba(140, 106, 63, 0.1);
+	--warn-text: #6e5230;
+
+	--danger: #9c3f26;
+	--danger-rgb: 156, 63, 38;
+
+	/* Filled surfaces, each shipped next to the foreground that goes on
+   * top of it. House rule for this file: a color things get printed on
+   * never ships alone — it ships beside its --on-* partner, and
+   * components read that partner instead of hand-picking a foreground.
+   * Every color bug this palette has had came from picking one by hand
+   * (white on a fill that turns light in dark mode; --bg borrowed as a
+   * stand-in for "the light one"), and pairing them at the source is
+   * what keeps that from being expressible. */
+	--action-primary-bg: #14130e;
+	--action-primary-bg-hover: #2b2921;
+	--on-action-primary: #f6f3ec;
+	--on-action-primary-rgb: 246, 243, 236;
+
+	/* Foreground for anything drawn on an --accent or --warn fill. */
+	--on-accent: #fcfaf6;
+	--on-warn: #fcfaf6;
+
+	/* The login page's dark panel and its logo mark — a true black distinct
+   * from --text, which is the near-black used for UI copy everywhere else. */
+	--brand-dark: #100f0c;
+
+	/* Text/logo color for content sitting directly on --brand-dark. That
+   * panel stays dark in both themes (see above) — its content has to
+   * stay light in both themes too, on purpose, which is exactly what
+   * naming it separately from --bg buys: --bg flips to a dark value under
+   * [data-theme='dark'], and content colored with --bg (assuming "the
+   * light one") would go dark-on-dark right along with it. Deliberately
+   * NOT redefined in the dark-theme blocks below — that's the whole
+   * point of this token existing. --on-brand-dark-rgb is the same color
+   * as an r,g,b triplet, for spots that need it inside rgba(..., alpha).
+   */
+	--on-brand-dark: #f4f1e9;
+	--on-brand-dark-rgb: 244, 241, 233;
+
+	/* Foreground for avatars and remote-cursor labels, which are filled with
+   * a per-user color picked by lib/presenceColor.ts. Those five colors are
+   * literal numbers in TypeScript (y-textarea builds rgba() strings itself
+   * and can't resolve a custom property), so they never follow the theme —
+   * and neither does what sits on them. Also never redefined below. */
+	--on-presence: #f8f5ee;
+
+	/* Document prose color — a warmer near-black than --text, used only for
+   * live (non-muted) document content in the editor. */
+	--prose-text: #26241e;
+
+	--radius-sm: 8px;
+	--radius-md: 10px;
+	--radius-lg: 14px;
+	--radius-xl: 16px;
+	--radius-2xl: 20px;
+	--radius-pill: 999px;
+
+	--font-sans: 'Hanken Grotesk', system-ui, sans-serif;
+	--font-serif: 'Newsreader', Georgia, serif;
+
+	/* Interface type scale. Every UI font-size in the app is one of these —
+   * no bare px values in component CSS. Collapses what used to be ~10
+   * near-identical sizes (11 vs 11.5, 13 vs 13.5, 14 vs 14.5px, ...) picked
+   * ad hoc per component into one deliberate scale. */
+	--text-2xs: 11px;
+	--text-xs: 12.5px;
+	--text-sm: 13.5px;
+	--text-base: 14.5px;
+	--text-md: 16px;
+	--text-lg: 18.5px;
+	--text-xl: 23px;
+	--text-2xl: 27px;
+	/* One-off display size (the login page's pull-quote) — not part of the
+   * shared step scale above, but still named instead of a bare literal. */
+	--text-display: 31px;
+
+	/* Document prose (serif) scale — separate from the UI scale above since
+   * it renders actual document content, not interface chrome. */
+	--prose-title: 44px;
+	--prose-body: 21px;
+
+	/* Interactive-feedback timing (hover/focus/press transitions). Collapses
+   * what used to be five near-identical ad hoc values (0.1s, 0.12s, 0.15s,
+   * 0.18s, 0.2s) picked per component into one deliberate scale — the same
+   * move already made for font-size above. Deliberately doesn't cover the
+   * one-off content-signal animations (remote-edit flash, history replay
+   * highlight, skeleton shimmer): those durations are each load-bearing to
+   * a specific effect, not incidental drift, so they stay literal. */
+	--duration-fast: 0.1s;
+	--duration-base: 0.15s;
+	--duration-slow: 0.2s;
+
+	/* Spacing scale. Same move already made for font-size and duration above —
+	 * paddings/gaps/margins should read off this instead of picking a literal
+	 * px value per component, which is how spacing drifts out of alignment. */
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 20px;
+	--space-6: 24px;
+
+	--shadow-btn: 0 1px 2px rgba(20, 19, 14, 0.08);
+	--shadow-btn-hover: 0 6px 18px rgba(22, 21, 15, 0.24);
+	--shadow-card: 0 2px 10px rgba(26, 25, 19, 0.06);
+	--shadow-dropdown: 0 16px 40px rgba(26, 25, 19, 0.14);
+	--shadow-modal: 0 40px 90px rgba(16, 15, 12, 0.35);
+
+	color-scheme: light;
+	font: var(--text-base) / 1.5 var(--font-sans);
+	color: var(--text);
+	background: var(--bg);
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark palette, same token names — see lib/theme.ts for how [data-theme]
+ * gets set (an explicit user choice always wins; system preference applies
+ * only when the user hasn't picked one, i.e. no [data-theme] attribute). */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) {
+		--bg: #1a1815;
+		--bg-rgb: 26, 24, 21;
+		--bg-sidebar: #151310;
+		--bg-card: #211e19;
+		--bg-card-rgb: 33, 30, 25;
+		--bg-hover: rgba(255, 255, 255, 0.06);
+		--bg-hover-strong: #2a2620;
+		--bg-input: #1d1a16;
+		--bg-skeleton: #262219;
+		--bg-skeleton-shine: #302b22;
+
+		--border: #2f2a22;
+		--border-input: #6e6658;
+		--border-hover: #837a69;
+		--divider: #241f19;
+
+		--text: #ece9e2;
+		--text-secondary: #c8c3b8;
+		--text-tertiary: #9c978a;
+		--text-muted: #8d8879;
+		--text-faint: #6c6858;
+		--text-faintest: #3b3730;
+
+		--accent: #c8a472;
+		--accent-rgb: 200, 164, 114;
+		--accent-bg: rgba(200, 164, 114, 0.16);
+		--accent-dot: #8fb3a5;
+		--accent-hover: #d9bc8f;
+
+		--success: #8fb3a5;
+		--success-bg: rgba(143, 179, 165, 0.16);
+
+		--warn: #d6ae7a;
+		--warn-bg: rgba(214, 174, 122, 0.16);
+		--warn-text: #e8c99b;
+
+		--danger: #e0785c;
+		--danger-rgb: 224, 120, 92;
+
+		/* Dark mode deliberately does NOT mirror light's near-black button
+     * into a near-white one. Inverting a neutral preserves the contrast
+     * ratio but flips the visual weight: #14130e on cream reads as
+     * grounded, while its inverse (#ece9e2 — bright cream) becomes the
+     * brightest thing on the screen and detaches from the toolbar around
+     * it. The brand accent carries the primary action here instead. */
+		--action-primary-bg: #c8a472;
+		--action-primary-bg-hover: #d9bc8f;
+		--on-action-primary: #1a1815;
+		--on-action-primary-rgb: 26, 24, 21;
+
+		--on-accent: #1a1815;
+		--on-warn: #1a1815;
+
+		--brand-dark: #0a0906;
+		--prose-text: #e4dfd3;
+
+		--shadow-btn: 0 1px 2px rgba(0, 0, 0, 0.4);
+		--shadow-btn-hover: 0 6px 16px rgba(0, 0, 0, 0.5);
+		--shadow-card: 0 2px 10px rgba(0, 0, 0, 0.3);
+		--shadow-dropdown: 0 16px 40px rgba(0, 0, 0, 0.45);
+		--shadow-modal: 0 30px 70px rgba(0, 0, 0, 0.6);
+
+		color-scheme: dark;
+	}
+}
+
+:root[data-theme='dark'] {
+	--bg: #1a1815;
+	--bg-rgb: 26, 24, 21;
+	--bg-sidebar: #151310;
+	--bg-card: #211e19;
+	--bg-card-rgb: 33, 30, 25;
+	--bg-hover: rgba(255, 255, 255, 0.06);
+	--bg-hover-strong: #2a2620;
+	--bg-input: #1d1a16;
+	--bg-skeleton: #262219;
+	--bg-skeleton-shine: #302b22;
+
+	--border: #2f2a22;
+	--border-input: #6e6658;
+	--border-hover: #837a69;
+	--divider: #241f19;
+
+	--text: #ece9e2;
+	--text-secondary: #c8c3b8;
+	--text-tertiary: #9c978a;
+	--text-muted: #8d8879;
+	--text-faint: #6c6858;
+	--text-faintest: #3b3730;
+
+	--accent: #c8a472;
+	--accent-rgb: 200, 164, 114;
+	--accent-bg: rgba(200, 164, 114, 0.16);
+	--accent-dot: #8fb3a5;
+	--accent-hover: #d9bc8f;
+
+	--success: #8fb3a5;
+	--success-bg: rgba(143, 179, 165, 0.16);
+
+	--warn: #d6ae7a;
+	--warn-bg: rgba(214, 174, 122, 0.16);
+	--warn-text: #e8c99b;
+
+	--danger: #e0785c;
+	--danger-rgb: 224, 120, 92;
+
+	/* Dark mode deliberately does NOT mirror light's near-black button
+   * into a near-white one. Inverting a neutral preserves the contrast
+   * ratio but flips the visual weight: #14130e on cream reads as
+   * grounded, while its inverse (#ece9e2 — bright cream) becomes the
+   * brightest thing on the screen and detaches from the toolbar around
+   * it. The brand accent carries the primary action here instead. */
+	--action-primary-bg: #c8a472;
+	--action-primary-bg-hover: #d9bc8f;
+	--on-action-primary: #1a1815;
+	--on-action-primary-rgb: 26, 24, 21;
+
+	--on-accent: #1a1815;
+	--on-warn: #1a1815;
+
+	--brand-dark: #0a0906;
+	--prose-text: #e4dfd3;
+
+	--shadow-btn: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--shadow-btn-hover: 0 6px 16px rgba(0, 0, 0, 0.5);
+	--shadow-card: 0 2px 10px rgba(0, 0, 0, 0.3);
+	--shadow-dropdown: 0 16px 40px rgba(0, 0, 0, 0.45);
+	--shadow-modal: 0 30px 70px rgba(0, 0, 0, 0.6);
+
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+}
+
+#root {
+	height: 100vh;
+	/* overflow: auto (not hidden) so content that exceeds the viewport at
+	 * high zoom or on a short window scrolls instead of being clipped
+	 * unreachably — WCAG 1.4.10 Reflow. min-height removed for the same
+	 * reason: it used to force scroll-less content to a floor taller than
+	 * some real windows. */
+	overflow: auto;
+}
+
+h1,
+h2,
+h3 {
+	font-weight: 500;
+	letter-spacing: -0.02em;
+	line-height: 1.2;
+	color: var(--text);
+	margin: 0;
+}
+
+p {
+	margin: 0;
+}
+
+a {
+	color: var(--accent);
+	text-decoration: none;
+}
+
+a:hover {
+	color: var(--accent-hover);
+}
+
+::selection {
+	background: rgba(var(--accent-rgb), 0.16);
+}
+
+[contenteditable]:focus {
+	outline: none;
+}
+
+button {
+	font-family: var(--font-sans);
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* WCAG 2.2 SC 2.3.3 — every non-essential animation/transition in the app
+ * (page-fade-in, modal/dropdown open-close, etc.) collapses to instant for
+ * anyone who's told their OS they get motion sick from this. `!important`
+ * is the deliberate exception here: this is a universal accessibility
+ * circuit-breaker that must win against any component's own specificity,
+ * not a normal style override. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.001ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.001ms !important;
+	}
+}

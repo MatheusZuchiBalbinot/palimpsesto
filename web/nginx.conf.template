@@ -1,0 +1,97 @@
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Docker's embedded DNS. Combined with proxy_pass using a variable
+    # (below) instead of a bare hostname, this makes nginx resolve
+    # API_PROXY_TARGET's host lazily, per-request — a bare hostname in
+    # proxy_pass is resolved once at config load, so if the backend
+    # service happens to start after this container (or is briefly
+    # unresolvable), nginx refuses to start at all instead of just
+    # failing the requests that need it.
+    resolver 127.0.0.11 valid=30s;
+
+    # This server block only ever speaks plain HTTP (no `listen 443 ssl`,
+    # no certificate) — a real deployment terminates TLS somewhere in
+    # front of this container (a load balancer, Cloudflare, Caddy, …) and
+    # forwards plain HTTP here, same as docker-compose.prod.yml assumes.
+    # Strict-Transport-Security belongs on *that* layer, not here: this
+    # nginx has no way to know the request ever was (or should be) HTTPS,
+    # and sending the header from a plain-HTTP origin would just be a lie
+    # the browser has no reason to trust anyway. If this container is ever
+    # made to terminate TLS itself instead, add `listen 443 ssl`, the
+    # certificate directives, and the HSTS header together, here.
+    gzip on;
+    gzip_vary on;
+    gzip_comp_level 6;
+    gzip_min_length 512;
+    gzip_proxied any;
+    gzip_types text/plain text/css text/xml application/json application/javascript application/xml application/xml+rss image/svg+xml font/woff2;
+
+    # Same-origin API + WebSocket, matching vite.config.ts's dev proxy —
+    # this is what makes connect-src 'self' below actually correct instead
+    # of requiring a second origin in the CSP. API_PROXY_TARGET is
+    # substituted at container start (this file is a template — see
+    # Dockerfile and the official nginx image's docker-entrypoint
+    # envsubst step), defaulting to the docker-compose service name.
+    location /api/ {
+        set $api_upstream ${API_PROXY_TARGET};
+        proxy_pass $api_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
+
+    location /healthz {
+        set $api_upstream ${API_PROXY_TARGET};
+        proxy_pass $api_upstream;
+    }
+
+    # A restrictive CSP, no script unsafe-inline, no external script CDN.
+    # script-src is the directive that actually matters against a
+    # compromised client (the app's own XSS threat model) — an XSS that
+    # can't load or inline a script can't exfiltrate a decrypted key from
+    # memory. It's 'self' only, no exceptions.
+    #
+    # style-src keeps 'unsafe-inline' because this app renders React inline
+    # style objects as native style="" attributes throughout — removing
+    # that would mean rewriting every component to move inline styles into
+    # stylesheets, for a directive that (unlike script-src) can't execute
+    # arbitrary code, only apply CSS. Google Fonts' stylesheet and font
+    # files are the one external origin allowed anywhere in this policy,
+    # scoped to exactly style-src/font-src, never script-src.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    # Vite names every built JS/CSS/font file with a content hash
+    # (index-<hash>.js) — a changed file always gets a new URL, so caching
+    # these forever is safe: a stale cached copy can only ever be an old
+    # file that's still correct for whatever old index.html referenced it,
+    # never a mismatched one. `location /` below (matched only when this
+    # doesn't) stays uncached — index.html is what has to be refetched on
+    # every visit for a new deploy's asset hashes to ever be seen.
+    #
+    # This location declares its own add_header, which (nginx's
+    # inheritance rule) means the server-level security headers above
+    # don't carry over here — that's fine: CSP/X-Frame-Options/
+    # Referrer-Policy/Permissions-Policy all govern what a *document*
+    # does, not a script/style/font response's own headers, so they'd be
+    # meaningless on these. X-Content-Type-Options is the one exception
+    # (it applies to any response, preventing MIME-sniffing), so it's
+    # repeated here.
+    location ~* \.(?:js|css|woff2?|svg|png|jpg|jpeg|webp|ico)$ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri /index.html;
+    }
+}

@@ -1,0 +1,46 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"plugins": ["react", "typescript", "oxc", "unicorn", "import"],
+	"rules": {
+		"react/rules-of-hooks": "error",
+		"react/only-export-components": ["warn", { "allowConstantExport": true }],
+
+		// Filename casing: .tsx files are React components/pages (PascalCase,
+		// like the type they default-export), everything else — hooks, api,
+		// lib, realtime — is camelCase. `main.tsx` is the one accepted
+		// exception (Vite's own entry-point naming convention). The override
+		// block below flips the case to pascalCase specifically for `**/*.tsx`.
+		"unicorn/filename-case": ["error", { "case": "camelCase", "ignore": ["^main\\.tsx$"] }],
+
+		// Import hygiene that oxlint's `import` plugin can actually check today
+		// (see the comment further down about `import/order`, which it can't).
+		"import/first": "error",
+		"import/newline-after-import": "error",
+		"import/no-duplicates": "error",
+		"import/no-cycle": "warn",
+		"import/no-self-import": "error",
+		"import/no-empty-named-blocks": "error"
+
+		// Deliberately NOT set: `import/order` and `import/consistent-type-specifier-style`.
+		// - `import/order` (grouping/alphabetizing imports) isn't implemented by
+		//   oxlint's import plugin yet — `.prettierrc.json`'s
+		//   `@ianvs/prettier-plugin-sort-imports` owns that instead, and runs on
+		//   every `npm run format`.
+		// - `consistent-type-specifier-style` was tried in both directions and
+		//   dropped: that same Prettier plugin merges a type-only import into
+		//   its sibling value import from the same module (inline `type X`),
+		//   but leaves a *standalone* type-only import (no value import from
+		//   that module exists to merge into) as a top-level `import type`.
+		//   Neither of the rule's two fixed modes matches that contextual
+		//   behavior, so enabling either one fights the formatter on every
+		//   `format` run. Prettier is the single source of truth for this one.
+	},
+	"overrides": [
+		{
+			"files": ["**/*.tsx"],
+			"rules": {
+				"unicorn/filename-case": ["error", { "case": "pascalCase", "ignore": ["^main\\.tsx$"] }]
+			}
+		}
+	]
+}
