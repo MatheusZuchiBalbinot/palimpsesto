@@ -1,9 +1,8 @@
 # Palimpsesto
 
-<!-- TODO: troque SEU_USUARIO/palimpsesto pelo caminho real do repo assim que for publicado no GitHub -->
-
-[![Backend CI](https://github.com/SEU_USUARIO/palimpsesto/actions/workflows/backend.yml/badge.svg)](https://github.com/SEU_USUARIO/palimpsesto/actions/workflows/backend.yml)
-[![Frontend CI](https://github.com/SEU_USUARIO/palimpsesto/actions/workflows/frontend.yml/badge.svg)](https://github.com/SEU_USUARIO/palimpsesto/actions/workflows/frontend.yml)
+[![Backend CI](https://github.com/MatheusZuchiBalbinot/palimpsesto/actions/workflows/backend.yml/badge.svg)](https://github.com/MatheusZuchiBalbinot/palimpsesto/actions/workflows/backend.yml)
+[![Frontend CI](https://github.com/MatheusZuchiBalbinot/palimpsesto/actions/workflows/frontend.yml/badge.svg)](https://github.com/MatheusZuchiBalbinot/palimpsesto/actions/workflows/frontend.yml)
+<!-- TODO: troque o badge de license assim que a licença for escolhida (ver ACTION_PLAN.md item 8) — sem LICENSE no repo, esse "TBD" é o estado real, não só um placeholder de preguiça. -->
 [![License](https://img.shields.io/badge/license-TBD-lightgrey)](LICENSE)
 
 <!-- TODO: um screenshot ou GIF curto do editor/vault aqui ajuda muito mais que texto — não dá pra gerar isso sem abrir o app num navegador real. -->

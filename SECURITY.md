@@ -11,9 +11,9 @@ sistema.
 **Não abra uma issue pública** pra uma vulnerabilidade de segurança — isso divulga o
 problema antes de existir uma correção.
 
-Em vez disso, use o **[GitHub Security Advisories](../../security/advisories/new)** deste
-repositório (aba "Security" → "Report a vulnerability") — o relato chega privado, direto
-pro mantenedor, sem precisar publicar nenhum endereço de contato aqui. Inclua:
+Em vez disso, use o **[GitHub Security Advisories](https://github.com/MatheusZuchiBalbinot/palimpsesto/security/advisories/new)**
+deste repositório (aba "Security" → "Report a vulnerability") — o relato chega privado,
+direto pro mantenedor, sem precisar publicar nenhum endereço de contato aqui. Inclua:
 
 - Uma descrição do problema e o impacto (o que um atacante consegue fazer).
 - Passos pra reproduzir, ou uma prova de conceito.
