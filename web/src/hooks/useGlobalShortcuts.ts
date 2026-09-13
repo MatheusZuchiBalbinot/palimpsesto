@@ -18,9 +18,9 @@ export type UseGlobalShortcutsParams = {
 };
 
 // Keyboard shortcuts for the whole DocumentPage screen — share/history/
-// panel/help. Ctrl+Z/Ctrl+Shift+Z are handled in the textarea itself
-// (realtime/documentConnection.ts's setupUndoRedo), since they only make
-// sense with focus in the editor.
+// panel/help. Ctrl+Z/Ctrl+Shift+Z are handled inside the editor itself
+// (y-codemirror.next's yUndoManagerKeymap, wired in codemirrorEditor.ts),
+// since they only make sense with focus in the editor.
 export function useGlobalShortcuts({
 	id,
 	navigate,

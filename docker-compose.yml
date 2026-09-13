@@ -29,7 +29,6 @@ services:
       PALIMPSESTO_ADDR: ${PALIMPSESTO_ADDR:-:8080}
       PALIMPSESTO_DATABASE_URL: postgres://${POSTGRES_USER:-palimpsesto}:${POSTGRES_PASSWORD:-palimpsesto}@db:5432/${POSTGRES_DB:-palimpsesto}?sslmode=disable
       PALIMPSESTO_JWT_SECRET: ${PALIMPSESTO_JWT_SECRET:-dev-only-secret-change-me-please-32b}
-      # This compose file serves everything over plain HTTP (no TLS) — a
       # Secure cookie would never be sent back by the browser in that
       # scenario, breaking refresh entirely. Only disabled here, in the dev
       # compose; any real deploy that doesn't set this variable stays
@@ -54,6 +53,10 @@ services:
       VITE_API_PROXY_TARGET: http://server:8080
     ports:
       - "5173:5173"
+      # `npm run preview` (production build smoke-test / Lighthouse audits
+      # against the real bundle instead of the dev server) — not started by
+      # default, but mapped here so it's reachable when run manually.
+      - "4173:4173"
     volumes:
       - ./web:/app
       - web_node_modules:/app/node_modules

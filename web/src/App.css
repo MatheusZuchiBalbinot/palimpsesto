@@ -148,14 +148,15 @@
 
 /* Every page's root container plays this once on mount — a soft fade
  * instead of a hard cut when navigating between routes. */
+/* Pure opacity, no transform — a translateY here made #root (height: 100vh;
+ * overflow: auto) briefly consider the page taller than the viewport for
+ * the animation's duration, flashing a scrollbar with nothing to scroll to. */
 @keyframes page-fade-in {
 	from {
 		opacity: 0;
-		transform: translateY(4px);
 	}
 	to {
 		opacity: 1;
-		transform: none;
 	}
 }
 
@@ -1017,7 +1018,10 @@
 	font-family: var(--font-serif);
 	font-size: var(--text-display);
 	line-height: 1.3;
-	font-weight: 300;
+	/* 400, not a true light weight — EB Garamond's lightest cut available
+	 * is regular; every var(--font-serif) display heading in this file
+	 * uses the same value for the same reason. */
+	font-weight: 400;
 	color: var(--on-brand-dark);
 	margin: 0;
 }
@@ -1048,13 +1052,17 @@
 .auth-form h1 {
 	font-family: var(--font-serif);
 	font-size: 36px;
-	font-weight: 300;
+	font-weight: 400;
 	letter-spacing: -0.02em;
 }
 
 .auth-form__subtitle {
 	font-size: var(--text-base);
-	color: var(--text-tertiary);
+	/* --text-tertiary reads at 3.7:1 against --bg — below WCAG AA's 4.5:1
+	 * for normal text (Lighthouse's color-contrast audit on /login).
+	 * --text-muted is the token index.css already calibrates to >=4.5:1
+	 * for exactly this "real text content" case. */
+	color: var(--text-muted);
 	margin: 7px 0 0;
 }
 
@@ -1077,7 +1085,11 @@
 	font-weight: 600;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
-	color: var(--text-faint);
+	/* A form label is real text content, not the "non-text"/decorative use
+	 * --text-faint is calibrated for (>=3:1, below WCAG AA's 4.5:1 for
+	 * normal text) — Lighthouse's color-contrast audit caught this on
+	 * /login's E-mail/Senha labels. */
+	color: var(--text-muted);
 }
 
 .form-field__row {
@@ -1097,6 +1109,32 @@
 	padding: 0;
 	font: inherit;
 	cursor: pointer;
+}
+
+.password-requirements {
+	list-style: none;
+	margin: -4px 0 0;
+	padding: 0;
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 6px 12px;
+}
+
+.password-requirements__item {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--text-xs);
+	color: var(--text-muted);
+	transition: color var(--duration-fast) ease;
+}
+
+.password-requirements__item svg {
+	flex: none;
+}
+
+.password-requirements__item--met {
+	color: var(--success);
 }
 
 .auth-no-recovery-note {
@@ -1204,7 +1242,7 @@
 .auth-standalone__content h1 {
 	font-family: var(--font-serif);
 	font-size: 34px;
-	font-weight: 300;
+	font-weight: 400;
 	letter-spacing: -0.02em;
 }
 
@@ -1717,7 +1755,7 @@
 .vault-body__header h1 {
 	font-family: var(--font-serif);
 	font-size: 38px;
-	font-weight: 300;
+	font-weight: 400;
 	letter-spacing: -0.022em;
 	line-height: 1;
 }
@@ -1911,24 +1949,34 @@
 	background: var(--divider);
 }
 
-/* Plain divided rows (Palimpsesto v2 prototype's "Anteriores" list) — not
- * boxed cards. Only the vault's one "live" document (.doc-hero, above)
- * gets card chrome; everything below it reads as a quiet editorial list,
- * which is what actually gave the vault its "stack of paper" character —
- * a page of bordered/shadowed tiles read as a dashboard instead. */
+/* A quiet list at rest (Palimpsesto v2 prototype's "Anteriores" list) that
+ * becomes a real card on hover/focus — a transparent border (so the
+ * hover/focus-visible border doesn't shift layout) instead of the previous
+ * border-bottom divider, which put a straight line through card-radius
+ * corners on hover and never looked settled either state. Spacing between
+ * rows now comes from margin (below), not the old divider line. */
 .doc-card {
-	border-bottom: 1px solid var(--divider);
-	border-radius: var(--radius-md);
+	border: 1px solid transparent;
+	border-radius: var(--radius-lg);
 	padding: 18px 14px;
 	display: flex;
 	align-items: center;
 	gap: 20px;
 	position: relative;
-	transition: background-color var(--duration-base) ease;
+	transition:
+		background-color var(--duration-base) ease,
+		border-color var(--duration-base) ease,
+		box-shadow var(--duration-base) ease;
+}
+
+.doc-card + .doc-card {
+	margin-top: 4px;
 }
 
 .doc-card:hover {
-	background: var(--bg-hover);
+	background: var(--bg-card);
+	border-color: var(--border-hover);
+	box-shadow: var(--shadow-card);
 }
 
 .doc-card--static {
@@ -1937,6 +1985,8 @@
 
 .doc-card--static:hover {
 	background: none;
+	border-color: transparent;
+	box-shadow: none;
 }
 
 /* Covers the whole card so the card itself is the click/focus target
@@ -2472,6 +2522,16 @@
 	background: rgba(var(--bg-rgb), 0.9);
 }
 
+/* KeyWaitScreen.tsx — waiting for (or failing to get) a document key.
+ * Centers the shared EmptyState in the space below the header, same idea
+ * as .invite-landing above. */
+.editor-key-wait {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
 .icon-btn {
 	width: 29px;
 	height: 29px;
@@ -2519,6 +2579,32 @@
 .icon-btn:disabled {
 	opacity: 0.4;
 	cursor: not-allowed;
+}
+
+/* Overlays an unresolved-comments count on the panel-toggle button — the
+ * side panel's own tab badge (.side-panel__tab-badge) is invisible whenever
+ * the panel is collapsed or the Pessoas tab is active, which is exactly
+ * when this signal matters most. */
+.icon-btn--badged {
+	position: relative;
+}
+
+.icon-btn__badge {
+	position: absolute;
+	top: -4px;
+	right: -4px;
+	min-width: 15px;
+	height: 15px;
+	padding: 0 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--radius-pill);
+	background: var(--warn);
+	color: var(--on-warn);
+	font-size: 9px;
+	font-weight: 700;
+	line-height: 1;
 }
 
 /* "auto width" variant for icon-btns that actually carry a text label
@@ -2578,22 +2664,38 @@
 	overflow: hidden;
 }
 
+/* position: relative so .editor-find (absolutely positioned, see below) is
+ * placed against this box instead of the page — it doesn't scroll itself;
+ * .editor-content__scroll underneath it does, so the find bar can float over
+ * it without either occupying flow space or scrolling away with the text. */
 .editor-content {
+	position: relative;
 	flex: 1;
+	overflow: hidden;
+}
+
+.editor-content__scroll {
+	height: 100%;
 	overflow: auto;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	padding: 40px 40px 70px;
+	/* CodeMirror's own scrollIntoView (see useFindInEditor.ts) scrolls this
+	 * ancestor by assigning its scrollTop directly, which is exactly what
+	 * scroll-behavior: smooth also governs — an eased scroll to the match
+	 * instead of an instant jump, with no extra JS. */
+	scroll-behavior: smooth;
 }
 
-/* Both float via position: sticky so they stay in view while scrolling a
- * long document, without resorting to position: fixed (which would need to
- * know the side panel's width to avoid overlapping it). */
+/* Absolutely positioned against .editor-content (not .editor-content__scroll,
+ * which scrolls) — floats over the page without pushing it down when it
+ * opens or up when it closes, and without needing to know the side panel's
+ * width the way position: fixed against the viewport would. */
 .editor-find {
-	position: sticky;
-	top: 0;
-	align-self: flex-end;
+	position: absolute;
+	top: 16px;
+	right: 16px;
 	z-index: 5;
 	display: flex;
 	align-items: center;
@@ -2603,7 +2705,6 @@
 	border-radius: var(--radius-md);
 	box-shadow: var(--shadow-dropdown);
 	padding: 7px 8px;
-	margin-bottom: 12px;
 	transition:
 		border-color var(--duration-base) ease,
 		box-shadow var(--duration-base) ease;
@@ -2671,11 +2772,8 @@
 .editor-content__page {
 	width: 100%;
 	max-width: 740px;
-	/* y-textarea positions remote cursor/selection overlays absolutely
-     against the nearest positioned ancestor (offsetParent) — without this,
-     they'd anchor to <body> instead of the editor page. */
-	position: relative;
 	background: var(--bg-card);
+	border: 1px solid var(--border);
 	border-radius: var(--radius-sm);
 	box-shadow:
 		0 20px 50px rgba(26, 25, 19, 0.1),
@@ -2686,7 +2784,7 @@
 .editor-content__page h1 {
 	font-family: var(--font-serif);
 	font-size: var(--prose-title);
-	font-weight: 300;
+	font-weight: 400;
 	line-height: 1.12;
 	letter-spacing: -0.025em;
 }
@@ -2694,31 +2792,54 @@
 .editor-content__meta {
 	font-size: var(--text-sm);
 	color: var(--text-muted);
-	margin: 10px 0 34px;
+	margin: 10px 0 32px;
 }
 
-.editor-textarea {
+.editor-content__divider {
+	height: 1px;
+	background: var(--divider);
+	margin: 0 0 40px;
+}
+
+.editor-codemirror {
 	width: 100%;
-	border: none;
+}
+
+/* CodeMirror ships its own base theme (border, focus ring, gutters) meant
+ * for a code-editor look — these overrides make it disappear into the
+ * paper-page design instead, the same "just text on paper" look the plain
+ * textarea it replaced had. */
+.editor-codemirror .cm-editor {
 	background: none;
-	resize: none;
 	font-family: var(--font-serif);
 	font-size: var(--prose-body);
-	line-height: 1.7;
 	color: var(--prose-text);
-	min-height: 320px;
-	padding: 0;
 }
 
-.editor-textarea::placeholder {
+.editor-codemirror .cm-editor.cm-focused {
+	outline: none;
+}
+
+.editor-codemirror .cm-scroller {
+	font-family: inherit;
+	line-height: 1.7;
+}
+
+.editor-codemirror .cm-content {
+	padding: 0;
+	min-height: 320px;
+}
+
+.editor-codemirror .cm-placeholder {
 	color: var(--text-muted);
 	font-style: italic;
 }
 
 /* Brief highlight when a remote edit lands — see handleContentUpdate in
- * DocumentPage.tsx. A native textarea has no per-character nodes to
- * animate an insertion on, so this is the honest substitute: a signal that
- * something changed here, not a literal appearance transition. */
+ * editorTracking.ts. CodeMirror's decorations could target the exact
+ * changed range instead of the whole editor, but that's a follow-up (see
+ * CODEMIRROR_PLAN.md) — this keeps the same "something changed here" signal
+ * the plain-textarea version had. */
 @keyframes editor-remote-flash {
 	0% {
 		background: var(--accent-bg);
@@ -2728,53 +2849,46 @@
 	}
 }
 
-.editor-textarea--remote-flash {
+.editor-codemirror .cm-editor.cm-editor--remote-flash {
 	animation: editor-remote-flash 0.4s ease;
 }
 
-/* ---------- remote cursors (y-textarea's Cursors class hardcodes these
-   two class names — see TextAreaBinding in DocumentPage.tsx) ---------- */
+/* ---------- remote cursors (y-codemirror.next's yRemoteSelections plugin
+   hardcodes these class names — see codemirrorEditor.ts) ---------- */
 
-/* The caret/selection-range indicator itself. Background-color, width, and
- * position (top/left) are the only things the library sets inline — width
- * is 1px for a plain caret, or the real pixel width of a selection range
- * when there is one (with a more translucent color, set alongside it). Use
- * `min-width`, never `width`, to widen the visibility of a bare caret:
- * `width` would clobber the real, wider value a selection range needs,
- * which is exactly what made a remote selection invisible to others —
- * indistinguishable from a plain caret once both got forced to the same
- * fixed width. `min-width` only raises the *floor*, so a selection wider
- * than that stays its real width. The position transition is what makes a
- * remote cursor slide to its new spot instead of teleporting — the same
- * "everything else instant" feeling as the text itself appearing without
- * any visual continuity. */
-.selectedText {
-	z-index: 5;
-	min-width: 3px;
-	border-radius: 2px;
-	opacity: 0.9;
-	pointer-events: none;
-	transition:
-		top var(--duration-fast) ease,
-		left var(--duration-fast) ease,
-		width var(--duration-fast) ease;
-}
-
-/* The little name label that follows a remote cursor. */
-.nameTag {
-	z-index: 6;
-	padding: 2px 7px;
+/* The little name label that follows a remote cursor — y-codemirror.next's
+ * own base theme (yRemoteSelectionsTheme) sets position/color inline per
+ * peer; this only restyles it to match the app's design tokens instead of
+ * the library's plain defaults. */
+.editor-codemirror .cm-ySelectionInfo {
 	border-radius: var(--radius-sm);
 	font-family: var(--font-sans);
 	font-size: var(--text-2xs);
 	font-weight: 600;
 	color: var(--on-presence);
-	white-space: nowrap;
 	box-shadow: var(--shadow-card);
-	pointer-events: none;
-	transition:
-		top var(--duration-fast) ease,
-		left var(--duration-fast) ease;
+}
+
+.editor-codemirror .cm-ySelectionCaretDot {
+	box-shadow: var(--shadow-card);
+}
+
+/* ---------- find bar match highlights (realtime/findHighlight.ts) ----------
+ * Every occurrence gets a soft tint; the current one (cm-findMatch--current)
+ * gets the stronger, opaque fill — visible even while the editor itself
+ * isn't focused (typing in the find input never steals focus, so
+ * CodeMirror's own selection highlight, which needs focus, can't be relied
+ * on to mark it). Closer to a native browser find's "highlight all matches,
+ * distinguish the current one" than the single-selection-only look this
+ * replaced. */
+.editor-codemirror .cm-findMatch {
+	background: var(--accent-bg);
+	border-radius: 2px;
+}
+
+.editor-codemirror .cm-findMatch--current {
+	background: var(--accent);
+	color: var(--on-accent);
 }
 
 .side-panel {
@@ -2899,6 +3013,10 @@
 }
 
 .comment-card {
+	/* --bg (the page's own tone), not --bg-card (the side panel's tone) —
+	 * gives each comment its own subtle surface nested inside the panel,
+	 * instead of blending flat into it. */
+	background: var(--bg);
 	border: 1px solid var(--border);
 	border-radius: var(--radius-lg);
 	padding: 14px;
@@ -3117,7 +3235,7 @@
 .history-content__page h1 {
 	font-family: var(--font-serif);
 	font-size: 38px;
-	font-weight: 300;
+	font-weight: 400;
 	line-height: 1.14;
 	letter-spacing: -0.022em;
 	color: var(--text-secondary);

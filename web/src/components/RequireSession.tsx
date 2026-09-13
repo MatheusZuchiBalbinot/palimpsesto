@@ -1,10 +1,17 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 
 import { bootstrapSession } from '../auth/actions';
 import { useSession } from '../hooks/useSession';
 import { routes } from '../routes';
-import { CommandPalette } from './CommandPalette';
+
+// RequireSession itself is imported eagerly at the app root (it has to be,
+// to guard every authenticated route) — a static import of CommandPalette
+// here would drag its whole module graph (api/docs and friends) into that
+// same eager bundle, even for a visitor who never gets past /login. Lazy
+// keeps that weight out of the initial load; a Ctrl+K palette that isn't
+// visible yet has no user-perceptible reason to block anything.
+const CommandPalette = lazy(() => import('./CommandPalette').then((m) => ({ default: m.CommandPalette })));
 
 /** Route guard: redirects to /login when there's no active session. Also
  * mounts the command palette here (not at the app root) so Ctrl+K only does
@@ -50,7 +57,9 @@ export function RequireSession() {
 	return (
 		<>
 			<Outlet />
-			<CommandPalette />
+			<Suspense fallback={null}>
+				<CommandPalette />
+			</Suspense>
 		</>
 	);
 }

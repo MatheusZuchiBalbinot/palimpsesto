@@ -105,16 +105,18 @@ type ConnState =
 	| { phase: 'destroyed' };
 
 export class DocProvider {
-	/** This document's live awareness instance — pass it (plus a
-	 * clientName/color) to y-textarea's TextAreaBinding to get remote
-	 * cursor rendering for free. Cleans itself up automatically when
-	 * opts.ydoc is destroyed. */
+	/** This document's live awareness instance — passed into
+	 * codemirrorEditor.ts's createCollabEditorView (which forwards it to
+	 * y-codemirror.next's yCollab extension) to get remote cursor rendering
+	 * for free. Cleans itself up automatically when opts.ydoc is destroyed. */
 	readonly awareness: Awareness;
 
 	private readonly opts: ProviderOptions;
 	private lastUpdateId: bigint;
-	// Always assigned synchronously by connect() at the end of the
-	// constructor — never read before that first assignment.
+	// Always assigned synchronously by connect(), called early in the
+	// constructor (right after this.awareness exists, before anything that
+	// could trigger a listener reading this field) — never read before that
+	// first assignment.
 	private state!: ConnState;
 	private reconnectAttempt = 0;
 	private readonly pendingBeforeOpen: Uint8Array[] = [];
@@ -127,20 +129,27 @@ export class DocProvider {
 		this.opts = opts;
 		this.lastUpdateId = opts.initialSinceId ?? 0n;
 		this.awareness = new Awareness(opts.ydoc);
+		// connect() must run before anything below that can trigger
+		// handleAwarenessUpdate/handleLocalUpdate synchronously — Yjs's
+		// Awareness fires its 'update' event synchronously from
+		// setLocalStateField, and that handler reads this.state.phase. Call
+		// it here, right after this.awareness exists (which is all connect()
+		// itself needs), so this.state is always assigned before any
+		// listener registered below can fire.
+		this.connect();
 		opts.ydoc.on('update', this.handleLocalUpdate);
 		this.awareness.on('update', this.handleAwarenessUpdate);
 		document.addEventListener('visibilitychange', this.handleVisibilityChange);
 		// Tags every awareness entry with the account it belongs to, so
 		// consumers of provider.awareness.getStates() can tell *whose*
 		// entry it is — the numeric client id alone means nothing outside
-		// this specific connection. 'presenceStatus' is separate from what
-		// y-textarea's own Cursors class writes (keyed by the textarea's own
-		// DOM id), so the two never collide.
+		// this specific connection. 'presenceStatus' is a separate field
+		// from the 'user' field codemirrorEditor.ts sets for cursor
+		// rendering, so the two never collide.
 		if (opts.userId) {
 			this.awareness.setLocalStateField('userId', opts.userId);
 		}
 		this.awareness.setLocalStateField('presenceStatus', 'online');
-		this.connect();
 	}
 
 	/** Marks the local user as idle/active — see the 60s idle timer in
@@ -241,7 +250,12 @@ export class DocProvider {
 	};
 
 	private connect(): void {
-		if (this.state.phase === 'destroyed') {
+		// Optional chaining because the very first call, from the
+		// constructor, runs before this.state has ever been assigned —
+		// `this.state` is genuinely undefined then, not "destroyed". Every
+		// later call (reconnect timer, visibilitychange) happens after this
+		// method has already assigned a real ConnState at least once.
+		if (this.state?.phase === 'destroyed') {
 			return;
 		}
 

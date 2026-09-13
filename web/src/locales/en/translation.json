@@ -10,7 +10,12 @@
 		"showPassword": "Show password",
 		"hidePassword": "Hide password",
 		"confirmPasswordLabel": "Confirm password",
-		"passwordMismatch": "Passwords don't match"
+		"passwordMismatch": "Passwords don't match",
+		"passwordReqLength": "At least {{count}} characters",
+		"passwordReqLowercase": "One lowercase letter",
+		"passwordReqUppercase": "One uppercase letter",
+		"passwordReqNumber": "One number",
+		"passwordReqSymbol": "One symbol (e.g. ! @ # $)"
 	},
 	"login": {
 		"quote": "Write together with people you trust. Only you can read it.",

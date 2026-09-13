@@ -122,7 +122,7 @@ export function HistoryPage() {
 				onRestore={() => setIsRestoreOpen(true)}
 			/>
 
-			<main id="main-content" className="editor-body">
+			<main id="main-content" tabIndex={-1} className="editor-body">
 				<div className="history-content">
 					<HistoryTextView title={docInfo ? displayTitle : null} text={text} highlight={highlight} memberName={memberName} />
 					<HistoryScrubber

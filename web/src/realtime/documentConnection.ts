@@ -1,6 +1,5 @@
 import type { TFunction } from 'i18next';
 import { type Dispatch, type SetStateAction } from 'react';
-import { TextAreaBinding } from 'y-textarea';
 import * as Y from 'yjs';
 
 import { getLatestSnapshot } from '../api/docs';
@@ -18,20 +17,19 @@ import {
 import type { DocumentDEK } from '../crypto/documentDek';
 import { base64ToBytes } from '../crypto/identity';
 import { loadIdentityKeyPair } from '../crypto/identityStore';
-import { cursorColorForId } from '../lib/presenceColor';
 import { showToast } from '../lib/toast';
-import { setupContentTracking, setupUndoRedo, type SetupContentTrackingParams } from './editorTracking';
+import { createCollabEditorView, type AriaAttributes, type CollabEditorHandle } from './codemirrorEditor';
+import { setupContentTracking, type SetupContentTrackingParams } from './editorTracking';
 import { makeMemberJoinedHandler, makeMemberLeftHandler, setupActivityTracking, setupPresenceTracking } from './presenceTracking';
 import { DocProvider, type ConnectionStatus, type ProviderOptions } from './provider';
 import { startSnapshotChecks, type MaybeCreateSnapshotParams } from './snapshotChecks';
 
 // ---------------------------------------------------------------------------
 // Connection setup for DocumentPage.tsx: the Yjs doc, DocProvider, and the
-// textarea binding. Presence/activity tracking lives in presenceTracking.ts,
-// undo/redo and content-tracking in editorTracking.ts, and snapshot
-// compaction in snapshotChecks.ts — this file wires those pieces together
-// around a single DocProvider connection instead of owning all of them
-// itself.
+// CodeMirror binding. Presence/activity tracking lives in presenceTracking.ts,
+// content-tracking in editorTracking.ts, and snapshot compaction in
+// snapshotChecks.ts — this file wires those pieces together around a single
+// DocProvider connection instead of owning all of them itself.
 // ---------------------------------------------------------------------------
 
 /** Every piece of connection state a component watching this document
@@ -192,45 +190,55 @@ function buildDocProvider(params: BuildDocProviderParams): DocProvider {
 
 type WireEditorSessionParams = {
 	provider: DocProvider;
-	textarea: HTMLTextAreaElement;
+	container: HTMLDivElement;
 	ytext: Y.Text;
 	ydoc: Y.Doc;
 	docId: DocumentId;
 	session: Session;
+	isReadOnly: boolean;
+	placeholderText: string;
+	ariaAttributes: AriaAttributes;
 	setters: ConnectionStateSetters;
 };
 
 type WiredEditorSession = {
-	binding: TextAreaBinding;
+	editorHandle: CollabEditorHandle;
 	stopPresenceTracking: () => void;
 	stopActivityTracking: () => void;
-	stopUndoRedo: () => void;
 	stopContentTracking: () => void;
 };
 
-function wireEditorSession({ provider, textarea, ytext, ydoc, docId, session, setters }: WireEditorSessionParams): WiredEditorSession {
+function wireEditorSession(params: WireEditorSessionParams): WiredEditorSession {
+	const { provider, container, ytext, ydoc, session, isReadOnly, placeholderText, ariaAttributes, setters } = params;
 	const { setAwayUserIds, setTypingUserIds, setCharCount, setWordCountValue } = setters;
 	const stopPresenceTracking = setupPresenceTracking(provider, setAwayUserIds, setTypingUserIds);
 	const stopActivityTracking = setupActivityTracking(provider);
 
-	// y-textarea's cursor overlay uses the textarea's DOM id as the key for
-	// its awareness field, and throws in the constructor if there isn't one.
-	textarea.id = `document-editor-${docId}`;
-	const binding = new TextAreaBinding(ytext, textarea, {
+	const editorHandle = createCollabEditorView({
+		container,
+		ytext,
 		awareness: provider.awareness,
+		userId: session.user.user_id,
 		clientName: session.user.display_name || session.user.email,
-		color: cursorColorForId(session.user.user_id),
+		isReadOnly,
+		placeholderText,
+		ariaAttributes,
 	});
 
-	const stopUndoRedo = setupUndoRedo(textarea, ytext);
-	const contentTrackingInput: SetupContentTrackingParams = { ydoc, ytext, textarea, binding, provider, setCharCount, setWordCountValue };
+	const contentTrackingInput: SetupContentTrackingParams = {
+		ydoc,
+		ytext,
+		view: editorHandle.view,
+		provider,
+		setCharCount,
+		setWordCountValue,
+	};
 	const stopContentTracking = setupContentTracking(contentTrackingInput);
 
 	return {
-		binding,
+		editorHandle,
 		stopPresenceTracking,
 		stopActivityTracking,
-		stopUndoRedo,
 		stopContentTracking,
 	};
 }
@@ -286,14 +294,22 @@ export type ConnectDocumentParams = {
 	identity: NonNullable<Awaited<ReturnType<typeof loadIdentityKeyPair>>>;
 	documentKey: DocumentDEK;
 	documentKeyRing: DocumentDEK[];
-	textarea: HTMLTextAreaElement;
+	container: HTMLDivElement;
+	isReadOnly: boolean;
+	placeholderText: string;
+	ariaAttributes: AriaAttributes;
 	t: TFunction;
 	setters: ConnectionStateSetters;
 	isCancelled: () => boolean;
+	/** Called once the CodeMirror view exists, so the caller can keep a
+	 * handle around for imperative concerns this module doesn't own —
+	 * jump-to-start/end, the find bar, and reacting to isReadOnly changing
+	 * after the connection has already opened. */
+	onEditorReady: (handle: CollabEditorHandle) => void;
 };
 
 export async function connectDocument(params: ConnectDocumentParams): Promise<(() => void) | undefined> {
-	const { id, documentKey, documentKeyRing, textarea, isCancelled } = params;
+	const { id, documentKey, documentKeyRing, container, isCancelled, onEditorReady } = params;
 	const { dek, keyEpoch } = documentKey;
 	const { ydoc, initialSinceId } = await loadYjsSeed(id, documentKeyRing);
 
@@ -312,25 +328,25 @@ export async function connectDocument(params: ConnectDocumentParams): Promise<((
 		return undefined;
 	}
 
-	const { binding, stopPresenceTracking, stopActivityTracking, stopUndoRedo, stopContentTracking } = wireEditorSession({
+	const { editorHandle, stopPresenceTracking, stopActivityTracking, stopContentTracking } = wireEditorSession({
 		...params,
 		provider,
-		textarea,
+		container,
 		ytext,
 		ydoc,
 		docId: id,
 	});
+	onEditorReady(editorHandle);
 
 	return () => {
 		stopContentTracking();
-		stopUndoRedo();
 		const snapshotCheckTimer = getSnapshotTimer();
 		if (snapshotCheckTimer) {
 			clearInterval(snapshotCheckTimer);
 		}
 		stopActivityTracking();
 		stopPresenceTracking();
-		binding.destroy();
+		editorHandle.destroy();
 		provider.destroy();
 		ydoc.destroy();
 	};

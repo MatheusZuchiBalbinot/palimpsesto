@@ -24,6 +24,7 @@ type EditorHeaderActionsProps = {
 	onDuplicate: () => void;
 	onExport: () => void;
 	onTogglePanel: () => void;
+	unresolvedCommentsCount: number;
 	onDelete: () => void;
 	onHelp: () => void;
 };
@@ -51,6 +52,7 @@ function EditorHeaderActions({
 	onDuplicate,
 	onExport,
 	onTogglePanel,
+	unresolvedCommentsCount,
 	onDelete,
 	onHelp,
 }: Readonly<EditorHeaderActionsProps>) {
@@ -74,8 +76,18 @@ function EditorHeaderActions({
 			<Button size="sm" icon={<Share2 size={15} />} onClick={onShare}>
 				{t('editor.share')}
 			</Button>
-			<IconButton label={t('editor.togglePanel')} onClick={onTogglePanel}>
+			<IconButton
+				label={t('editor.togglePanel')}
+				className={unresolvedCommentsCount > 0 ? 'icon-btn--badged' : undefined}
+				onClick={onTogglePanel}
+			>
 				<Menu size={17} />
+				{unresolvedCommentsCount > 0 ? (
+					<span className="icon-btn__badge">
+						<span aria-hidden="true">{unresolvedCommentsCount}</span>
+						<span className="sr-only">{t('editor.unresolvedCount', { count: unresolvedCommentsCount })}</span>
+					</span>
+				) : null}
 			</IconButton>
 			<Dropdown
 				trigger={({ isOpen, onClick, triggerRef }) => (
@@ -145,6 +157,7 @@ type EditorHeaderProps = {
 	onDuplicate: () => void;
 	onExport: () => void;
 	onTogglePanel: () => void;
+	unresolvedCommentsCount: number;
 	onDelete: () => void;
 	onHelp: () => void;
 };
@@ -166,6 +179,7 @@ export function EditorHeader({
 	onDuplicate,
 	onExport,
 	onTogglePanel,
+	unresolvedCommentsCount,
 	onDelete,
 	onHelp,
 }: Readonly<EditorHeaderProps>) {
@@ -207,6 +221,7 @@ export function EditorHeader({
 				onDuplicate={onDuplicate}
 				onExport={onExport}
 				onTogglePanel={onTogglePanel}
+				unresolvedCommentsCount={unresolvedCommentsCount}
 				onDelete={onDelete}
 				onHelp={onHelp}
 			/>

@@ -7,10 +7,12 @@ import { register } from '../auth/actions';
 import { Button } from '../components/Button';
 import { DerivationProgress } from '../components/DerivationProgress';
 import { TextField } from '../components/Input';
+import { PasswordRequirements } from '../components/PasswordRequirements';
 import { PASSWORD_MIN_LENGTH } from '../constants';
 import { useAsyncAction } from '../hooks/useAsyncAction';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { translateError } from '../i18n/errors';
+import { isPasswordStrong } from '../lib/passwordStrength';
 import { routes, withRedirectParam } from '../routes';
 
 const CHECKMARK_STROKE_WIDTH = 3;
@@ -43,10 +45,11 @@ export function RegisterPage() {
 	});
 
 	const isPasswordMismatch = confirmPassword !== '' && password !== confirmPassword;
+	const canContinue = isPasswordStrong(password) && password === confirmPassword;
 
 	function handleStep1Submit(e: SubmitEvent<HTMLFormElement>) {
 		e.preventDefault();
-		if (password !== confirmPassword) {
+		if (!canContinue) {
 			return;
 		}
 		setStep(2);
@@ -60,7 +63,7 @@ export function RegisterPage() {
 		<div className="auth-standalone">
 			<RegisterBrandHeader />
 
-			<main id="main-content" className="auth-standalone__content">
+			<main id="main-content" tabIndex={-1} className="auth-standalone__content">
 				<ProgressSteps currentStep={step} />
 
 				{step === 1 ? (
@@ -74,6 +77,7 @@ export function RegisterPage() {
 						confirmPassword={confirmPassword}
 						onConfirmPasswordChange={setConfirmPassword}
 						isPasswordMismatch={isPasswordMismatch}
+						canContinue={canContinue}
 						onSubmit={handleStep1Submit}
 						loginHref={withRedirectParam(routes.login, searchParams)}
 					/>
@@ -103,6 +107,7 @@ type RegisterStep1Props = {
 	confirmPassword: string;
 	onConfirmPasswordChange: (value: string) => void;
 	isPasswordMismatch: boolean;
+	canContinue: boolean;
 	onSubmit: (e: SubmitEvent<HTMLFormElement>) => void;
 	loginHref: string;
 };
@@ -117,6 +122,7 @@ function RegisterStep1({
 	confirmPassword,
 	onConfirmPasswordChange,
 	isPasswordMismatch,
+	canContinue,
 	onSubmit,
 	loginHref,
 }: Readonly<RegisterStep1Props>) {
@@ -146,6 +152,7 @@ function RegisterStep1({
 					value={password}
 					onChange={(e) => onPasswordChange(e.target.value)}
 				/>
+				<PasswordRequirements password={password} />
 				<TextField
 					label={t('auth.confirmPasswordLabel')}
 					type="password"
@@ -156,7 +163,9 @@ function RegisterStep1({
 					error={isPasswordMismatch ? t('auth.passwordMismatch') : undefined}
 				/>
 			</div>
-			<Button type="submit">{t('register.continue')}</Button>
+			<Button type="submit" disabled={!canContinue}>
+				{t('register.continue')}
+			</Button>
 			<p className="auth-footnote">
 				{t('register.hasAccount')}{' '}
 				<Link to={loginHref} className="text-link">

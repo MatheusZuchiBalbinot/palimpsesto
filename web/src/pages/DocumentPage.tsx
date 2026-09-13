@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
@@ -19,16 +19,17 @@ import { useDocumentCopyActions, type UseDocumentCopyActionsParams } from '../ho
 import { useDocumentKeyRing } from '../hooks/useDocumentKeyRing';
 import { useDocumentMeta } from '../hooks/useDocumentMeta';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
-import { useFindInTextarea } from '../hooks/useFindInTextarea';
+import { useFindInEditor } from '../hooks/useFindInEditor';
 import { useGlobalShortcuts, type UseGlobalShortcutsParams } from '../hooks/useGlobalShortcuts';
 import { useKeyConflicts, type UseKeyConflictsParams } from '../hooks/useKeyConflicts';
 import { copyCurrentLink } from '../lib/clipboard';
 import { syncStatusLabel, syncStatusTone } from '../lib/collaborationStatus';
 import { createDocInfoActions, type CreateDocInfoActionsParams } from '../lib/documentActions';
 import { createCommentActions, resolveAllComments, type CreateCommentActionsParams } from '../lib/documentComments';
+import { goToEnd, goToStart } from '../lib/editorNavigation';
 import { registerPaletteActions, type PaletteAction } from '../lib/paletteActions';
 import { createPeopleActions, type CreatePeopleActionsParams } from '../lib/peopleActions';
-import { goToEnd, goToStart } from '../lib/textareaNavigation';
+import type { AriaAttributes, CollabEditorHandle } from '../realtime/codemirrorEditor';
 import { routes } from '../routes';
 
 export function DocumentPage() {
@@ -40,7 +41,10 @@ export function DocumentPage() {
 	// below it gets the branded type instead of re-trusting a raw string
 	// at each of their own call sites.
 	const id = routeDocId ? toDocumentId(routeDocId) : undefined;
-	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const editorHandleRef = useRef<CollabEditorHandle | null>(null);
+	const titleId = useId();
+	const statsId = useId();
 	const session = getSession();
 
 	const { docInfo, setDocInfo, members, comments, setComments, refreshMembers, refreshComments } = useDocumentMeta(id);
@@ -53,7 +57,7 @@ export function DocumentPage() {
 	const [activeModal, setActiveModal] = useState<DocumentModal | null>(null);
 	const [commentDraft, setCommentDraft] = useState('');
 	const [isResolvedCommentsShown, setIsResolvedCommentsShown] = useState(false);
-	const { isFindOpen, setIsFindOpen, findBar } = useFindInTextarea(textareaRef);
+	const { isFindOpen, setIsFindOpen, findBar } = useFindInEditor(editorHandleRef);
 	const { documentKey, documentKeyRing, keyStatus, bumpKeyRefresh } = useDocumentKeyRing(id, session);
 
 	const deleteCommentTarget = activeModal?.type === 'delete-comment' ? activeModal.commentId : null;
@@ -83,10 +87,40 @@ export function DocumentPage() {
 	const keyConflictsInput: UseKeyConflictsParams = { id, keyStatus, documentKey, members };
 	const { keyConflicts, handleTrustKeyConflict, handleDismissKeyConflict } = useKeyConflicts(keyConflictsInput);
 
-	const documentConnectionInput: UseDocumentConnectionParams = { id, session, documentKey, documentKeyRing, textareaRef, t };
+	const hasTitle = Boolean(docInfo && documentKey);
+	const ariaAttributes: AriaAttributes = hasTitle
+		? { 'aria-labelledby': titleId, 'aria-describedby': statsId }
+		: { 'aria-label': t('editor.editorPlaceholder'), 'aria-describedby': statsId };
+	const documentConnectionInput: UseDocumentConnectionParams = {
+		id,
+		session,
+		documentKey,
+		documentKeyRing,
+		containerRef,
+		editorHandleRef,
+		isReadOnly,
+		placeholderText: t('editor.editorPlaceholder'),
+		ariaAttributes,
+		t,
+	};
 	const { onlineUserIds, awayUserIds, typingUserIds, status, pendingCount, charCount, wordCountValue } =
 		useDocumentConnection(documentConnectionInput);
 	const isDisconnectBannerShown = useDisconnectBanner(status);
+
+	// The connection effect in useDocumentConnection only opens once per
+	// document/session/key — isReadOnly (a role can change live, via another
+	// member's action) and the aria description (title arrives asynchronously
+	// after the connection may have already opened) need their own reactivity
+	// instead of tearing down and reopening the whole realtime connection.
+	useEffect(() => {
+		editorHandleRef.current?.setReadOnly(isReadOnly);
+	}, [isReadOnly]);
+	useEffect(() => {
+		editorHandleRef.current?.setAriaAttributes(ariaAttributes);
+		// ariaAttributes is a fresh object every render; hasTitle/titleId/statsId/t
+		// are its actual inputs and are what should gate re-dispatching it.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [hasTitle, titleId, statsId, t]);
 
 	const globalShortcutsInput: UseGlobalShortcutsParams = {
 		id,
@@ -219,25 +253,27 @@ export function DocumentPage() {
 				onDuplicate={() => void handleDuplicate()}
 				onExport={() => void handleExport()}
 				onTogglePanel={() => setIsPanelOpen((v) => !v)}
+				unresolvedCommentsCount={unresolvedComments.length}
 				onDelete={() => setIsDeleteDocumentOpen(true)}
 				onHelp={() => setIsShortcutsHelpOpen(true)}
 			/>
 
 			{isDisconnectBannerShown ? <DisconnectBanner /> : null}
 
-			<main id="main-content" className="editor-body">
+			<main id="main-content" tabIndex={-1} className="editor-body">
 				<EditorContent
 					isFindOpen={isFindOpen}
 					findBar={findBar}
 					docInfo={docInfo}
 					documentKey={documentKey}
 					displayTitle={displayTitle}
+					titleId={titleId}
+					statsId={statsId}
 					wordCountValue={wordCountValue}
 					charCount={charCount}
-					isReadOnly={isReadOnly}
-					textareaRef={textareaRef}
-					onGoToStart={() => goToStart(textareaRef.current)}
-					onGoToEnd={() => goToEnd(textareaRef.current)}
+					containerRef={containerRef}
+					onGoToStart={() => goToStart(editorHandleRef.current?.view ?? null)}
+					onGoToEnd={() => goToEnd(editorHandleRef.current?.view ?? null)}
 				/>
 
 				<SidePanel

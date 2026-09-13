@@ -12,9 +12,9 @@ const BITS_PER_BYTE = 8;
 
 // Rendered as an inline SVG in the same document (see Sigil.tsx), so —
 // unlike the RGB literals in lib/presenceColor.ts, which are needed
-// because y-textarea builds rgba() strings on its own without access to
-// the stylesheet — a direct design-token reference resolves correctly
-// here.
+// because the collab editor's remote-cursor renderer (y-codemirror.next)
+// builds CSS color strings on its own without access to the stylesheet —
+// a direct design-token reference resolves correctly here.
 const PALETTE = ['var(--accent)', 'var(--warn)', 'var(--text-secondary)', 'var(--accent-dot)', 'var(--warn-text)'];
 
 export type SigilData = {

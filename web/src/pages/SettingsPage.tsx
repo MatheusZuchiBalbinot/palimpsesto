@@ -19,7 +19,7 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useSession } from '../hooks/useSession';
 import { useSettingsIdentity } from '../hooks/useSettingsIdentity';
 import { useTheme } from '../hooks/useTheme';
-import { languageStorageKey } from '../i18n/config';
+import { languageStorageKey, loadLanguageResources } from '../i18n/config';
 import { translateError } from '../i18n/errors';
 import { showToast } from '../lib/toast';
 import { routes } from '../routes';
@@ -40,7 +40,11 @@ export function SettingsPage() {
 	const name = userDisplayName || userEmail || '';
 
 	function handleLanguageChange(code: string) {
-		void i18n.changeLanguage(code);
+		// The non-default language's translations aren't in the bundle until
+		// asked for (see loadLanguageResources) — this fetches them first so
+		// changeLanguage doesn't briefly fall back to the default language's
+		// text while the JSON is still in flight.
+		void loadLanguageResources(code).then(() => i18n.changeLanguage(code));
 		try {
 			localStorage.setItem(languageStorageKey, code);
 		} catch {
@@ -69,7 +73,7 @@ export function SettingsPage() {
 		<div className="settings-page">
 			<SettingsHeader />
 
-			<main id="main-content" className="settings-body">
+			<main id="main-content" tabIndex={-1} className="settings-body">
 				<div className="settings-content">
 					<ProfileCard userId={userId} name={name} email={userEmail} onRenameProfile={(v) => void handleRenameProfile(v)} />
 					<IdentityCard identity={identity} />

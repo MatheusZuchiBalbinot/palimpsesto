@@ -48,6 +48,7 @@ export function ShareInviteForm({ email, onEmailChange, role, onRoleChange, isPe
 					className="input"
 					type="email"
 					required
+					autoComplete="off"
 					placeholder={t('share.invitePlaceholder')}
 					aria-label={t('share.invitePlaceholder')}
 					value={email}

@@ -5,6 +5,7 @@ import type { DocumentId, UserId } from '../api/ids';
 import type { Session } from '../auth/session';
 import type { DocumentDEK } from '../crypto/documentDek';
 import { loadIdentityKeyPair } from '../crypto/identityStore';
+import type { AriaAttributes, CollabEditorHandle } from '../realtime/codemirrorEditor';
 import { connectDocument, type ConnectDocumentParams, type ConnectionStateSetters } from '../realtime/documentConnection';
 import type { ConnectionStatus } from '../realtime/provider';
 
@@ -13,19 +14,24 @@ type OpenDocumentConnectionEffectParams = {
 	session: Session | null;
 	documentKey: DocumentDEK | null;
 	documentKeyRing: DocumentDEK[];
-	textareaRef: RefObject<HTMLTextAreaElement | null>;
+	containerRef: RefObject<HTMLDivElement | null>;
+	editorHandleRef: RefObject<CollabEditorHandle | null>;
+	isReadOnly: boolean;
+	placeholderText: string;
+	ariaAttributes: AriaAttributes;
 	t: TFunction;
 	setters: ConnectionStateSetters;
 };
 
 function openDocumentConnectionEffect(params: OpenDocumentConnectionEffectParams): () => void {
-	const { id, session, documentKey, documentKeyRing, textareaRef, t, setters } = params;
-	const textarea = textareaRef.current;
+	const { id, session, documentKey, documentKeyRing, containerRef, editorHandleRef, isReadOnly, placeholderText, ariaAttributes, t, setters } =
+		params;
+	const container = containerRef.current;
 
 	let isCancelled = false;
 	let cleanup: (() => void) | undefined;
 
-	if (id && textarea && session && documentKey && documentKeyRing.length > 0) {
+	if (id && container && session && documentKey && documentKeyRing.length > 0) {
 		// loadIdentityKeyPair is async (crypto/identityStore.ts's non-extractable
 		// device key needs a WebCrypto round-trip) — everything past this point
 		// used to run synchronously within the effect; isCancelled now guards
@@ -45,10 +51,16 @@ function openDocumentConnectionEffect(params: OpenDocumentConnectionEffectParams
 				identity,
 				documentKey,
 				documentKeyRing,
-				textarea,
+				container,
+				isReadOnly,
+				placeholderText,
+				ariaAttributes,
 				t,
 				setters,
 				isCancelled: () => isCancelled,
+				onEditorReady: (handle) => {
+					editorHandleRef.current = handle;
+				},
 			};
 			// If a future change to connectDocument/wireEditorSession ever adds an
 			// await after its own isCancelled() checks settle, this handles it too
@@ -67,6 +79,7 @@ function openDocumentConnectionEffect(params: OpenDocumentConnectionEffectParams
 
 	return () => {
 		isCancelled = true;
+		editorHandleRef.current = null;
 		cleanup?.();
 	};
 }
@@ -76,11 +89,26 @@ export type UseDocumentConnectionParams = {
 	session: Session | null;
 	documentKey: DocumentDEK | null;
 	documentKeyRing: DocumentDEK[];
-	textareaRef: RefObject<HTMLTextAreaElement | null>;
+	containerRef: RefObject<HTMLDivElement | null>;
+	editorHandleRef: RefObject<CollabEditorHandle | null>;
+	isReadOnly: boolean;
+	placeholderText: string;
+	ariaAttributes: AriaAttributes;
 	t: TFunction;
 };
 
-export function useDocumentConnection({ id, session, documentKey, documentKeyRing, textareaRef, t }: UseDocumentConnectionParams) {
+export function useDocumentConnection({
+	id,
+	session,
+	documentKey,
+	documentKeyRing,
+	containerRef,
+	editorHandleRef,
+	isReadOnly,
+	placeholderText,
+	ariaAttributes,
+	t,
+}: UseDocumentConnectionParams) {
 	const [onlineUserIds, setOnlineUserIds] = useState<Set<UserId>>(new Set());
 	const [awayUserIds, setAwayUserIds] = useState<Set<UserId>>(new Set());
 	const [typingUserIds, setTypingUserIds] = useState<Set<UserId>>(new Set());
@@ -99,13 +127,31 @@ export function useDocumentConnection({ id, session, documentKey, documentKeyRin
 	};
 
 	useEffect(() => {
-		const effectInput: OpenDocumentConnectionEffectParams = { id, session, documentKey, documentKeyRing, textareaRef, t, setters };
+		const effectInput: OpenDocumentConnectionEffectParams = {
+			id,
+			session,
+			documentKey,
+			documentKeyRing,
+			containerRef,
+			editorHandleRef,
+			isReadOnly,
+			placeholderText,
+			ariaAttributes,
+			t,
+			setters,
+		};
 		return openDocumentConnectionEffect(effectInput);
 		// setters is a fresh object every render (its fields are the stable
 		// setState functions above) — including it here would reconnect on
 		// every render instead of only when the connection's own inputs change.
+		// isReadOnly and ariaAttributes are deliberately excluded too: they're
+		// only the *initial* value for a new connection (see the reactive
+		// setReadOnly/setAriaAttributes effects in DocumentPage.tsx for what
+		// keeps them live afterward) — including them here would tear down and
+		// reopen the whole realtime connection just because a role changed or
+		// a title finished loading.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [id, session, documentKey, documentKeyRing, t, textareaRef]);
+	}, [id, session, documentKey, documentKeyRing, t, containerRef, editorHandleRef]);
 
 	return {
 		onlineUserIds,

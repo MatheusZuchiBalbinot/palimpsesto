@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react';
 
+import { ApiError } from '../api/http';
+
 type AsyncActionState = {
 	isPending: boolean;
 	error: unknown;
@@ -23,7 +25,17 @@ export function useAsyncAction<Args extends unknown[]>(action: (...args: Args) =
 			setState({ isPending: true, error: null });
 			action(...args)
 				.then(() => setState({ isPending: false, error: null }))
-				.catch((error: unknown) => setState({ isPending: false, error }));
+				.catch((error: unknown) => {
+					// A non-ApiError here is a client-side bug (a thrown assertion, a
+					// crypto/storage failure) rather than something the backend
+					// reported — translateError (i18n/errors.ts) shows the user the
+					// same generic "something went wrong" copy for it either way, so
+					// without this it would otherwise vanish without a trace.
+					if (!(error instanceof ApiError)) {
+						console.error('async action failed unexpectedly', error);
+					}
+					setState({ isPending: false, error });
+				});
 		},
 		[action],
 	);

@@ -10,7 +10,12 @@
 		"showPassword": "Mostrar senha",
 		"hidePassword": "Ocultar senha",
 		"confirmPasswordLabel": "Confirmar senha",
-		"passwordMismatch": "As senhas não coincidem"
+		"passwordMismatch": "As senhas não coincidem",
+		"passwordReqLength": "Pelo menos {{count}} caracteres",
+		"passwordReqLowercase": "Uma letra minúscula",
+		"passwordReqUppercase": "Uma letra maiúscula",
+		"passwordReqNumber": "Um número",
+		"passwordReqSymbol": "Um símbolo (ex.: ! @ # $)"
 	},
 	"login": {
 		"quote": "Escreva junto com quem você confia. Só vocês conseguem ler.",

@@ -44,7 +44,7 @@ export function LoginPage() {
 		<div className="auth-split">
 			<LoginBrandPanel quote={t('login.quote')} subquote={t('login.subquote')} />
 
-			<main id="main-content" className="auth-panel">
+			<main id="main-content" tabIndex={-1} className="auth-panel">
 				<form className="auth-form" onSubmit={handleSubmit}>
 					<div>
 						<h1>{t('login.title')}</h1>

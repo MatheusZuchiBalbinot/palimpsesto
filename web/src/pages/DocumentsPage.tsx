@@ -228,7 +228,7 @@ export function DocumentsPage() {
 				pendingInvitesCount={invites.length}
 			/>
 
-			<main id="main-content" className="vault-main">
+			<main id="main-content" tabIndex={-1} className="vault-main">
 				<VaultToolbar search={search} onSearchChange={setSearch} sortMode={sortMode} onCycleSort={handleCycleSort} />
 
 				<div className="vault-body">

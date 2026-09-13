@@ -30,6 +30,18 @@ server {
     gzip_proxied any;
     gzip_types text/plain text/css text/xml application/json application/javascript application/xml application/xml+rss image/svg+xml font/woff2;
 
+    # Brotli compresses the exact same asset types 15-20% smaller than gzip
+    # at an equivalent quality level — free win on top of gzip above, which
+    # a browser that doesn't send `Accept-Encoding: br` still falls back to.
+    # Declared here (not just relied on from the base image's own defaults)
+    # so this file stays correct on its own if the base image ever changes —
+    # see Dockerfile's prod stage for why it's fholzer/nginx-brotli, not the
+    # official nginx image, which has no brotli module at all.
+    brotli on;
+    brotli_comp_level 6;
+    brotli_min_length 512;
+    brotli_types text/plain text/css text/xml application/json application/javascript application/xml application/xml+rss image/svg+xml font/woff2;
+
     # Same-origin API + WebSocket, matching vite.config.ts's dev proxy —
     # this is what makes connect-src 'self' below actually correct instead
     # of requiring a second origin in the CSP. API_PROXY_TARGET is
@@ -60,10 +72,12 @@ server {
     # style objects as native style="" attributes throughout — removing
     # that would mean rewriting every component to move inline styles into
     # stylesheets, for a directive that (unlike script-src) can't execute
-    # arbitrary code, only apply CSS. Google Fonts' stylesheet and font
-    # files are the one external origin allowed anywhere in this policy,
-    # scoped to exactly style-src/font-src, never script-src.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+    # arbitrary code, only apply CSS. No external origin anywhere in this
+    # policy: fonts used to be Google Fonts' CDN, but are self-hosted now
+    # (@fontsource, bundled by Vite) — style-src/font-src dropped the
+    # fonts.googleapis.com/fonts.gstatic.com exceptions along with it, since
+    # nothing loads from there anymore.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;

@@ -51,9 +51,13 @@
 	--text-faint: #8a8275;
 	--text-faintest: #c7c2b5;
 
-	--accent: #8c6a3f;
-	--accent-rgb: 140, 106, 63;
-	--accent-bg: rgba(140, 106, 63, 0.12);
+	/* Darkened one step from the prototype's literal #8c6a3f (4.15:1 against
+	 * --bg) to clear WCAG AA's 4.5:1 for normal text — Lighthouse's
+	 * color-contrast audit caught this on /login's "Esqueci a senha?" link,
+	 * but --accent is used as text color in several other spots too. */
+	--accent: #7d5c33;
+	--accent-rgb: 125, 92, 51;
+	--accent-bg: rgba(125, 92, 51, 0.12);
 	/* Decoupled from --accent on purpose — the prototype uses bronze for
    * links/CTAs/selection but a distinct sage green specifically for
    * "online"/"private"/success signals (the vault's presence widget, the
@@ -124,8 +128,11 @@
 	--radius-2xl: 20px;
 	--radius-pill: 999px;
 
-	--font-sans: 'Hanken Grotesk', system-ui, sans-serif;
-	--font-serif: 'Newsreader', Georgia, serif;
+	/* @fontsource-variable/manrope's variable-weight build registers under
+	 * 'Manrope Variable', not the plain 'Manrope' family name the Google
+	 * Fonts CDN version used. */
+	--font-sans: 'Manrope Variable', system-ui, sans-serif;
+	--font-serif: 'EB Garamond', Georgia, serif;
 
 	/* Interface type scale. Every UI font-size in the app is one of these —
    * no bare px values in component CSS. Collapses what used to be ~10
@@ -328,6 +335,48 @@
 
 body {
 	margin: 0;
+}
+
+/* Custom scrollbar, applied globally instead of per-container — the OS
+ * default (especially on Windows/Linux) is a thick, high-contrast widget
+ * that doesn't respect the app's theme and visibly overlaps narrow
+ * containers like the document side panel (see PeoplePanel's member rows).
+ * No `scrollbar-gutter: stable` here on purpose — it was tried and reverted:
+ * applied globally it also hit #root (height: 100vh; overflow: auto), which
+ * almost never actually scrolls (its children have their own overflow:auto
+ * areas), so it permanently reserved a dead strip of empty space down the
+ * right edge of the whole app instead of preventing an occasional shift.
+ * Firefox uses the standard properties; everything else uses the
+ * ::-webkit-scrollbar pseudo-elements below — both are kept in sync with
+ * the same tokens so light/dark theming (see :root/[data-theme] above)
+ * applies to the scrollbar too, instead of it staying OS-default grey. */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--border-hover) transparent;
+}
+
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: var(--border-hover);
+	border-radius: var(--radius-sm);
+	border: 2px solid transparent;
+	background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background-color: var(--text-muted);
+}
+
+::-webkit-scrollbar-corner {
+	background: transparent;
 }
 
 #root {

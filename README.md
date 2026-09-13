@@ -10,6 +10,7 @@
 
 ## Índice
 
+- [Showcase](#showcase)
 - [A restrição central](#a-restrição-central)
 - [Como rodar](#como-rodar)
 - [Stack](#stack)
@@ -28,12 +29,20 @@
 
 ---
 
+## Showcase
+
+Editor de documento, compartilhamento, histórico de versões e a página de configurações
+(impressão digital de identidade, dispositivos ativos) — capturas de tela reais, não
+mockups: [`docs/screenshots/`](docs/screenshots/README.md).
+
+---
+
 ## A restrição central
 
 - **O servidor nunca pode ler o conteúdo de um documento.** Ele roteia bytes opacos, guarda chaves públicas, autentica usuários e resolve autorização — nada além disso.
 - Critério de aceite do projeto inteiro: se o backend conseguir reconstruir um parágrafo, o projeto falhou.
 - Quase toda a engenharia interessante aqui sai dos problemas que essa regra cria. As consequências de projeto:
-  - **Não é um editor rich-text** — é uma `<textarea>` ligada a um `Y.Text` via `y-textarea`; formatação exigiria expor estrutura ao servidor.
+  - **Não é um editor rich-text** — CodeMirror 6 sem highlighting/markdown, ligado a um `Y.Text` puro via `y-codemirror.next`; formatação exigiria expor estrutura ao servidor.
   - **Sem gerenciador de estado global** (Redux/Zustand/Jotai) — stores no nível de módulo com pub/sub manual e `useSyncExternalStore`.
   - **Sem biblioteca de formulários** (React Hook Form/Formik) — `useState` manual.
   - **Sem design system pesado** — componentes próprios, Radix Tooltip e lucide-react.
@@ -83,7 +92,8 @@ make down / clean   # derruba / limpa
 | UI | React 19.2.8 + TypeScript ~6.0.2 |
 | Build | Vite 8.2.2 |
 | Rotas | React Router DOM 7.18.3 |
-| CRDT | Yjs 13.6.32 + `y-protocols` (awareness) + `y-textarea` (binding) |
+| CRDT | Yjs 13.6.32 + `y-protocols` (awareness) + `y-codemirror.next` (binding) |
+| Editor | CodeMirror 6 (`@codemirror/state`, `@codemirror/view`, `@codemirror/commands`) |
 | Curvas | `@noble/curves` — X25519, Ed25519 |
 | Cifras | `@noble/ciphers` — XChaCha20-Poly1305 |
 | Hashes | `@noble/hashes` — Argon2id, HKDF-SHA256, SHA-256 |

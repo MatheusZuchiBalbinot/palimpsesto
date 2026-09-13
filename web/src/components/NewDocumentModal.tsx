@@ -224,8 +224,8 @@ type ImportFilePickerProps = {
 /** The "Importar" tile's own controls, shown only once that tile is
  * selected — a real file read (FileReader via File.text()), not the
  * disabled placeholder this used to be. Limited to plain text: the editor
- * itself is a plain textarea, so anything richer (.docx, .pdf) would just
- * import as unreadable binary noise. */
+ * itself doesn't render rich text, so anything richer (.docx, .pdf) would
+ * just import as unreadable binary noise. */
 function ImportFilePicker({ importedFile, importError, onFileChange }: Readonly<ImportFilePickerProps>) {
 	const { t } = useTranslation();
 	const fileInputId = useId();

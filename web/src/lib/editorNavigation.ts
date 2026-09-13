@@ -1,3 +1,5 @@
+import type { EditorView } from '@codemirror/view';
+
 type FindMatchIndexParams = {
 	lowerValue: string;
 	lowerQuery: string;
@@ -53,21 +55,21 @@ export function matchOrdinalAt(lowerValue: string, lowerQuery: string, matchInde
 	}
 }
 
-export function goToStart(textarea: HTMLTextAreaElement | null) {
-	if (!textarea) {
+export function goToStart(view: EditorView | null) {
+	if (!view) {
 		return;
 	}
-	textarea.focus();
-	textarea.setSelectionRange(0, 0);
-	textarea.scrollTop = 0;
+	view.focus();
+	view.dispatch({ selection: { anchor: 0 }, scrollIntoView: true });
+	view.scrollDOM.scrollTop = 0;
 }
 
-export function goToEnd(textarea: HTMLTextAreaElement | null) {
-	if (!textarea) {
+export function goToEnd(view: EditorView | null) {
+	if (!view) {
 		return;
 	}
-	textarea.focus();
-	const end = textarea.value.length;
-	textarea.setSelectionRange(end, end);
-	textarea.scrollTop = textarea.scrollHeight;
+	view.focus();
+	const end = view.state.doc.length;
+	view.dispatch({ selection: { anchor: end }, scrollIntoView: true });
+	view.scrollDOM.scrollTop = view.scrollDOM.scrollHeight;
 }

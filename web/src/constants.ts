@@ -70,6 +70,6 @@ export const AUTO_LOCK_IDLE_MS = 1_800_000; // 30 minutes
 export const PASSWORD_MIN_LENGTH = 12;
 
 /** Largest file the "Importar" starting point (NewDocumentModal) will
- * read — the editor is a plain textarea, not built for dropping a whole
- * book into, and the imported text becomes one CRDT update on creation. */
+ * read — the editor is plain text, not built for dropping a whole book
+ * into, and the imported text becomes one CRDT update on creation. */
 export const IMPORT_MAX_FILE_BYTES = 1_000_000;
