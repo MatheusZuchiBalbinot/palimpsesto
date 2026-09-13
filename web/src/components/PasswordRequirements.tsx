@@ -27,10 +27,7 @@ export function PasswordRequirements({ password }: Readonly<PasswordRequirements
 	return (
 		<ul className="password-requirements">
 			{requirements.map((requirement) => (
-				<li
-					key={requirement.key}
-					className={`password-requirements__item${requirement.satisfied ? ' password-requirements__item--met' : ''}`}
-				>
+				<li key={requirement.key} className={`password-requirements__item${requirement.satisfied ? ' password-requirements__item--met' : ''}`}>
 					{requirement.satisfied ? <Check size={REQUIREMENT_ICON_SIZE} /> : <Circle size={REQUIREMENT_ICON_SIZE} />}
 					{t(REQUIREMENT_LABEL_KEY[requirement.key], { count: PASSWORD_MIN_LENGTH })}
 				</li>

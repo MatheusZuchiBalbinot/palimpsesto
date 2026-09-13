@@ -76,11 +76,7 @@ function EditorHeaderActions({
 			<Button size="sm" icon={<Share2 size={15} />} onClick={onShare}>
 				{t('editor.share')}
 			</Button>
-			<IconButton
-				label={t('editor.togglePanel')}
-				className={unresolvedCommentsCount > 0 ? 'icon-btn--badged' : undefined}
-				onClick={onTogglePanel}
-			>
+			<IconButton label={t('editor.togglePanel')} className={unresolvedCommentsCount > 0 ? 'icon-btn--badged' : undefined} onClick={onTogglePanel}>
 				<Menu size={17} />
 				{unresolvedCommentsCount > 0 ? (
 					<span className="icon-btn__badge">
